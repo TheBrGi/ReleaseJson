@@ -27,7 +27,9 @@ public class BtUtil {
     private final static long ATTESA = 10000;
     public static final String GREETING = "greeting";
     private static Context context;
-    private static BluetoothController bc = new BluetoothController();
+    public static BluetoothController bc = new BluetoothController();
+    public static BluetoothController bc1 =BluetoothController.getInstance();
+    private static final Object lock=new Object();
 
     private BtUtil() {
     }
@@ -96,72 +98,52 @@ public class BtUtil {
     }
 
     public static String riceviStringa() {
-        BluetoothController bc = new BluetoothController();
-        bc.build(getContext());
-
-        enableBt();
-
-        bc.startAsServer();
-        final String[] s = new String[1];
-        final boolean[] isNull = new boolean[1];//nel caso sia true interrompe ciclo bloccante
-        bc.setBluetoothListener(new BluetoothListener() {
-
+        bc1.setAppUuid(myUUID);
+        final String[] str=new String[1];
+        str[0]=null;
+        bc1.setBluetoothListener(new BluetoothListener() {
+            @Override
+            public void onReadData(BluetoothDevice device, Object data) {
+                str[0]=(String)data;
+            }
             @Override
             public void onActionStateChanged(int preState, int state) {
-                // Callback when bluetooth power state changed.
             }
-
             @Override
             public void onActionDiscoveryStateChanged(String discoveryState) {
-                // Callback when local Bluetooth adapter discovery process state changed.
             }
-
             @Override
             public void onActionScanModeChanged(int preScanMode, int scanMode) {
-                // Callback when the current scan mode changed.
             }
-
             @Override
             public void onBluetoothServiceStateChanged(int state) {
-                // Callback when the connection state changed.
             }
-
             @Override
             public void onActionDeviceFound(BluetoothDevice device, short rssi) {
-                // Callback when found device.
-            }
-
-            @Override
-            public void onReadData(final BluetoothDevice device, final Object data) {
-                // Callback when remote device send data to current device.
-                //bc.disconnect();
-                s[0] = (String) data;
-                if (s[0] == null) {
-                    isNull[0] = true;
-                }
             }
         });
-        while (s[0] == null && isNull[0] == false) {
-        }
-        bc.disconnect();
-        bc.release();
-        return s[0];
+        bc1.startAsServer();
+        while(str[0]==null){}
+        //bc1.disconnect();
+        return str[0];
     }
 
     public static void mandaStringa(final String s, final String addr) {
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                Sender send = new Sender(addr, s);
-                send.start();
+                BluetoothAdapter btAdapter = getBtAdapter();
+                BluetoothDevice btDevice = btAdapter.getRemoteDevice(addr);
+                Sender connect = new Sender(addr,s);
+                connect.start();
                 try {
                     long attesaMax = 5000;
-                    send.join(attesaMax);
+                    connect.join(attesaMax);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } finally {
-                    if (send.isAlive())
-                        send.interrupt();
+                    if (connect.isAlive())
+                        connect.interrupt();
                 }
             }
         };
@@ -171,8 +153,8 @@ public class BtUtil {
     public static void inviaGreeting(NeighborGreeting greet, Node vicino) {
         BluetoothAdapter btAdapter = getBtAdapter();
         BluetoothDevice btDevice = btAdapter.getRemoteDevice(vicino.getMACAddress());
-        ConnectThread connect = new ConnectThread(btAdapter, btDevice, greet);
-        connect.start();
+        //ConnectThread connect = new ConnectThread(btAdapter, btDevice, greet,lock);
+        //connect.start();
     }
 
     public static NeighborGreeting riceviGreeting() {
@@ -180,7 +162,7 @@ public class BtUtil {
         Object obj = null;
         NeighborGreeting ng = null;
         while (true) {
-            AcceptThread accept = new AcceptThread(btAdapter, GREETING);
+            AcceptThread accept = new AcceptThread(btAdapter, GREETING,lock);
             accept.start();
             obj = accept.getAnswer();
             if (obj instanceof NeighborGreeting) {
@@ -198,7 +180,6 @@ public class BtUtil {
     private static class Sender extends Thread {
         private String address;
         private Object obj;
-        private BluetoothController bc = new BluetoothController();
 
         public Sender(String address, Object obj) {
             this.address = address;
@@ -208,18 +189,17 @@ public class BtUtil {
         @Override
         public void run() {
             try {
-                bc.build(getContext());
-                enableBt();
-                bc.connect(address);
-                while (!(bc.getConnectionState() == com.prog.tlc.btexchange.lmbluetoothsdk.base.State.STATE_CONNECTED)) {
+                bc1.setAppUuid(myUUID);
+                //enableBt();
+                bc1.disconnect();
+                bc1.connect(address);
+                while (!(bc1.getConnectionState() == com.prog.tlc.btexchange.lmbluetoothsdk.base.State.STATE_CONNECTED)) {
                 }
-                Log.d("stato connessione", String.valueOf(bc.getConnectionState()));
-                bc.write(obj);
-                while ((bc.getConnectionState() == com.prog.tlc.btexchange.lmbluetoothsdk.base.State.STATE_CONNECTED)) {
+                Log.d("stato connessione", String.valueOf(bc1.getConnectionState()));
+                bc1.write(obj);
+                while ((bc1.getConnectionState() == com.prog.tlc.btexchange.lmbluetoothsdk.base.State.STATE_CONNECTED)) {
                 }
-                bc.disconnect();
-                bc.release();
-                bc=null;
+
             } catch (NullPointerException e) {
             }
         }
@@ -228,9 +208,7 @@ public class BtUtil {
         public void interrupt() {
             super.interrupt();
             try {
-                bc.disconnect();
-                bc.release();
-                bc=null;
+                bc1.disconnect();
             } catch (NullPointerException e) {
             }
         }
