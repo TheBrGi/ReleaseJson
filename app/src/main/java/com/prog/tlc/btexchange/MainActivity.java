@@ -48,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private ArrayAdapter<String> adapter = null;
     IntentFilter filter;
     String tag = "debugging";
-    BluetoothAdapter btAdapter;
     public static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private AODV protocollo;
     private Dispositivo mioDispositivo;
@@ -71,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         //    }
         //});
         BtUtil.setContext(this.getApplicationContext());
+        BtUtil.setActivity(this);
+        BtUtil.accendiBt();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -80,8 +81,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        BtUtil.setActivity(this);
-        btAdapter = BluetoothAdapter.getDefaultAdapter();
 
 
         lv = (ListView) findViewById(R.id.listview);
@@ -97,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 //t.show();
                 String obj = "Ciao da " + BtUtil.getBtAdapter().getName();
                 Node nodo = vicini.get(position);
-                BluetoothDevice selectedDevice = btAdapter.getRemoteDevice(nodo.getMACAddress());
+                BluetoothDevice selectedDevice = BtUtil.getBtAdapter().getRemoteDevice(nodo.getMACAddress());
 
                 BtUtil.mandaMessaggio(selectedDevice, obj);
                 Log.i(tag, "in click listener");
@@ -118,15 +117,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
 
     private void stampaNodiAVideo() {
+
         Runnable r = new Runnable() {
             @Override
             public void run() {
                 while (true) {
-                    adapter.clear(); //TODO controllare che stampi i nodi giusti
+                    //TODO controllare che stampi i nodi giusti
                     vicini = BtUtil.cercaVicini();
-                    adapter.addAll((Collection) vicini);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            adapter.clear();
+                            adapter.addAll((Collection) vicini);
+                        }
+                    });
                     try {
-                        wait(1000);
+                        Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -146,11 +152,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onPause() {
         super.onPause();
-        try {
-            BtUtil.unregisterReceiver();
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        }
+
+        BtUtil.unregisterReceiver();
+
     }
 
     @Override
@@ -166,7 +170,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             Toast.makeText(getApplicationContext(), "Bluetooth must be enabled to continue", Toast.LENGTH_SHORT).show();
             finish();
         } else {
-            while (btAdapter.getState() != btAdapter.STATE_ON) {
+            while (BtUtil.getBtAdapter().getState() != BtUtil.getBtAdapter().STATE_ON) {
                 try {
                     Thread.sleep(200);
                 } catch (InterruptedException e) {

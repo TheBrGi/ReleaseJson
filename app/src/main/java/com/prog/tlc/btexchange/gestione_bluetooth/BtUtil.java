@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA_DISCOVERY = 4000;
+    private final static long ATTESA_DISCOVERY = 6000;
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -136,25 +136,30 @@ public class BtUtil {
     }
 
     public static BluetoothAdapter getBtAdapter() {
-        return BluetoothAdapter.getDefaultAdapter();
+        return btAdapter;
     }
 
     public static ArrayList<BluetoothDevice> getViciniVisibli() { return  deviceVisibili; }
 
     public static ArrayList<Node> cercaVicini() {
+        Log.d(tag,"chiamata cerca vicini");
         deviceVisibili.clear();
         btAdapter.startDiscovery();
+        Log.d(tag,"discovery started");
         try {
             Thread.sleep(ATTESA_DISCOVERY);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         btAdapter.cancelDiscovery();
+        Log.d(tag,"discovery canceled");
+        Log.d("lista devices",deviceVisibili.toString());
         ArrayList<Node> list=new ArrayList<>();
         for(BluetoothDevice bd: deviceVisibili) {
             Node n = new Node(bd.getName(),bd.getAddress());
             list.add(n);
         }
+        Log.d("lista",list.toString());
         return list;
     }
 
@@ -184,9 +189,9 @@ public class BtUtil {
     }
 
     public static void mandaMessaggio(BluetoothDevice selectedDevice, String obj) {
-        if (btAdapter.isDiscovering()) {
+        /*if (btAdapter.isDiscovering()) {
             btAdapter.cancelDiscovery();
-        }
+        }*/
         if (sockets.containsKey(selectedDevice.getAddress())) {
             BluetoothSocket k = sockets.get(selectedDevice.getAddress());
             if (k.isConnected()) {
@@ -205,8 +210,12 @@ public class BtUtil {
         }
     }
 
-    public static void unregisterReceiver() throws IllegalArgumentException{
-        mainActivity.unregisterReceiver(receiver);
+    public static void unregisterReceiver() {
+        try {
+            mainActivity.unregisterReceiver(receiver);
+        }catch (IllegalArgumentException e){
+            e.printStackTrace();
+        }
     }
 
     public static void registerReceiver() {
@@ -245,7 +254,7 @@ public class BtUtil {
 
         public void run() {
             // Cancel discovery because it will slow down the connection
-            btAdapter.cancelDiscovery();
+            //btAdapter.cancelDiscovery();
             Log.i(tag, "connect - run");
             try {
                 // Connect the device through the socket. This will block
