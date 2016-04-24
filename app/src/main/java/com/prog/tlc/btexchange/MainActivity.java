@@ -1,16 +1,10 @@
 package com.prog.tlc.btexchange;
 
-import android.bluetooth.BluetoothAdapter;
+
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -26,20 +20,12 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.prog.tlc.btexchange.gestioneDispositivo.Dispositivo;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
 import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
 import com.prog.tlc.btexchange.protocollo.AODV;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -51,7 +37,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private AODV protocollo;
     private Dispositivo mioDispositivo;
-    private final long TEMPO_ATTESA_VICINI = 7500;
+    private final long TEMPO_INVIO_GREET = 3000;
     private boolean sending = false;
     ArrayList<Node> vicini;
 
@@ -111,7 +97,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
         BtUtil.startServer();*/
-
+        mioDispositivo = new Dispositivo(BtUtil.getBtAdapter().getName());
+        protocollo = new AODV(mioDispositivo,TEMPO_INVIO_GREET);
 
     }
 
@@ -123,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             public void run() {
                 while (true) {
                     //TODO controllare che stampi i nodi giusti
-                    vicini = BtUtil.cercaVicini();
+                    vicini = new ArrayList<>(mioDispositivo.getListaNodi());
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {

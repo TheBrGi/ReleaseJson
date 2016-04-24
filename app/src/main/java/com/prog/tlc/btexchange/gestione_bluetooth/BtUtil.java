@@ -12,21 +12,20 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
-
 import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
-
 import com.prog.tlc.btexchange.protocollo.NeighborGreeting;
-
+import com.prog.tlc.btexchange.protocollo.RouteReply;
+import com.prog.tlc.btexchange.protocollo.RouteRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Created by BrGi on 16/03/2016.
@@ -44,6 +43,10 @@ public class BtUtil {
     protected static final int MESSAGE_READ = 1;
     private static ConcurrentHashMap<String, BluetoothSocket> sockets = new ConcurrentHashMap<>();
     private static ArrayList<BluetoothDevice> deviceVisibili = new ArrayList<>();
+    private static ConcurrentLinkedQueue<RouteRequest> rreqs = new ConcurrentLinkedQueue<>();
+    private static ConcurrentLinkedQueue<RouteReply> rreps = new ConcurrentLinkedQueue<>();
+    private static ConcurrentLinkedQueue<Object> messages = new ConcurrentLinkedQueue<>();
+    private static ConcurrentLinkedQueue<NeighborGreeting> greetings = new ConcurrentLinkedQueue<>();
 
     private static BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -172,22 +175,29 @@ public class BtUtil {
     }
 
     public static void inviaGreeting(NeighborGreeting greet, Node vicino) {
-        BluetoothAdapter btAdapter = getBtAdapter();
-        BluetoothDevice btDevice = btAdapter.getRemoteDevice(vicino.getMACAddress());
-        //ConnectThread connect = new ConnectThread(btAdapter, btDevice, greet,lock);
-        //connect.start();
+        BluetoothDevice dest = btAdapter.getRemoteDevice(vicino.getMACAddress());
+        mandaMessaggio(dest,greet);
     }
 
     public static NeighborGreeting riceviGreeting() {
-
-        return null;
+        while (true) {
+            if (!greetings.isEmpty()) {
+                NeighborGreeting ng = greetings.poll();
+                return ng;
+            }
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static String getMACMioDispositivo() {
         return BluetoothAdapter.getDefaultAdapter().getAddress();
     }
 
-    public static void mandaMessaggio(BluetoothDevice selectedDevice, String obj) {
+    public static void mandaMessaggio(BluetoothDevice selectedDevice, Object obj) {
         /*if (btAdapter.isDiscovering()) {
             btAdapter.cancelDiscovery();
         }*/
@@ -311,20 +321,27 @@ public class BtUtil {
         }
 
         public void run() {
-            byte[] buffer;  // buffer store for the stream
-            int bytes; // bytes returned from read()
 
             // Keep listening to the InputStream until an exception occurs
             while (true) {
                 try {
                     // Read from the InputStream
-                    //buffer = new byte[1024];
-                    //bytes = mmInStream.read(buffer);
                     ObjectInputStream ois = new ObjectInputStream(mmInStream);
-                    Object obj = ois.readObject();
+                    Object ric = ois.readObject();
+                    if(ric instanceof NeighborGreeting) {
+                        greetings.add((NeighborGreeting) ric);
+                    }
+                    else if(ric instanceof RouteReply) {
+                        rreps.add((RouteReply) ric);
+                    }
+                    else if(ric instanceof RouteRequest) {
+                        rreqs.add((RouteRequest) ric);
+                    }
+                    else if(ric instanceof Object) {
+                        messages.add(ric);
+                    }
                     // Send the obtained bytes to the UI activity
-                    mHandler.obtainMessage(MESSAGE_READ, obj)
-                            .sendToTarget();
+                    //mHandler.obtainMessage(MESSAGE_READ, obj).sendToTarget();
 
                 } catch (IOException e) {
                     Log.d(tag, "lettura fallita");
@@ -386,13 +403,6 @@ public class BtUtil {
                 if (socket != null) {
                     // Do work to manage the connection (in a separate thread)
                     manageConnectedSocket(socket);
-                    /*try {
-                        mmServerSocket.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        break;
-                    }*/
-
                 }
             }
         }
