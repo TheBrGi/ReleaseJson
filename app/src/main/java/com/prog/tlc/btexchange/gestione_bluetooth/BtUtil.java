@@ -39,7 +39,6 @@ public class BtUtil {
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
     private static String tag = "BtExchange debug:";
-    private static IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
     private static AcceptThread acceptThread;
     protected static final int SUCCESS_CONNECT = 0;
     protected static final int MESSAGE_READ = 1;
@@ -219,6 +218,7 @@ public class BtUtil {
     }
 
     public static void registerReceiver() {
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
         mainActivity.registerReceiver(receiver, filter);
         filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
         mainActivity.registerReceiver(receiver, filter);
