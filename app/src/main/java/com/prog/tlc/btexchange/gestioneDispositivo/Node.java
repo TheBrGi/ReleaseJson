@@ -1,9 +1,11 @@
 package com.prog.tlc.btexchange.gestioneDispositivo;
 
+import java.io.Serializable;
+
 /**
  * Created by Domenico on 10/03/2016.
  */
-public class Node {
+public class Node implements Serializable {
     private String nome, MACAddress;
 
     public Node(String n, String MAC) {

@@ -80,23 +80,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 String[] split = s.split("\n");
                 //Toast t = Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT);
                 //t.show();
-                String obj = "Ciao da " + BtUtil.getBtAdapter().getName();
-                Node nodo = vicini.get(position);
-                BluetoothDevice selectedDevice = BtUtil.getBtAdapter().getRemoteDevice(nodo.getMACAddress());
+                final String obj = "Ciao da " + BtUtil.getBtAdapter().getName();
+                final Node nodo = vicini.get(position);
+                Runnable r=new Runnable() {
+                    @Override
+                    public void run() {
+                        protocollo.inviaMessaggio(nodo.getMACAddress(),obj,nodo.getNome());
+                    }
+                };
+                new Thread(r).start();
 
-                BtUtil.mandaMessaggio(selectedDevice, obj);
                 Log.i(tag, "in click listener");
-                //BtUtil.mandaStringa(obj, split[1]);
             }
         });
-        /*while (btAdapter.getState() != btAdapter.STATE_ON) {
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        BtUtil.startServer();*/
+
         mioDispositivo = new Dispositivo(BtUtil.getBtAdapter().getName());
         protocollo = new AODV(mioDispositivo,TEMPO_INVIO_GREET);
 
@@ -111,6 +108,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 while (true) {
                     //TODO controllare che stampi i nodi giusti
                     vicini = new ArrayList<>(mioDispositivo.getListaNodi());
+
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {

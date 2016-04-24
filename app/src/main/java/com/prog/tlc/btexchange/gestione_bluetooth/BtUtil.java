@@ -143,7 +143,7 @@ public class BtUtil {
     }
 
     public static String getMACMioDispositivo() {
-        return BluetoothAdapter.getDefaultAdapter().getAddress();
+        return btAdapter.getAddress();
     }
 
     public static ArrayList<Node> cercaVicini() {

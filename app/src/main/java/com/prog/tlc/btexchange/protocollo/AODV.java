@@ -20,9 +20,9 @@ public class AODV {
         myDev = d;
         gestoreVicini = new GestoreVicini(d, tempoAttesaAggVicini);
         gestoreVicini.start();
-        //new HandlerReq().start();
-        //new HandlerReply().start();
-        //new HandlerMex().start();
+        new HandlerReq().start();
+        new HandlerReply().start();
+        new HandlerMex().start();
     }
 
 
@@ -72,6 +72,7 @@ public class AODV {
                 RouteRequest rr = BtUtil.riceviRichiesta();
                 String s = "ricevuto REQ da "+rr.getLast_sender();
                 BtUtil.mostraMess(s);
+                Log.d("rreq ricevuta isNull?:",rr.getSource_addr());
                 if (!myDev.getRREQRicevuti().containsKey(rr.getSource_addr())) {
                     gestisciRREQ(rr);
                     myDev.aggiungiRREQ(rr);
