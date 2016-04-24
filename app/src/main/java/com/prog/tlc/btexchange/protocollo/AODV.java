@@ -1,5 +1,7 @@
 package com.prog.tlc.btexchange.protocollo;
 
+import android.util.Log;
+
 import com.prog.tlc.btexchange.gestioneDispositivo.*;
 import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
 
@@ -28,7 +30,7 @@ public class AODV {
         RouteRequest req = new RouteRequest(myDev.getMACAddress(), myDev.getSequenceNumber(), dest, destSeqNumber, hopCount, myDev.getMACAddress());
         List<Node> vicini = gestoreVicini.getVicini();
         for (Node vicino : vicini) {
-            BtUtil.inviaRREQ(req,vicino.getMACAddress());
+            BtUtil.inviaRREQ(req, vicino.getMACAddress());
         }
         myDev.incrementaSeqNum();
         //ora ci mettiamo in attesa della reply
@@ -44,6 +46,21 @@ public class AODV {
         return null; //se ritorna null l'utente deve avvisare che non c'è un percorso per la destinazione
     }
 
+    public void inviaMessaggio(String MACdestinazione, String contenuto, String nomeDest) {
+        Percorso p=null;
+        if(!myDev.esistePercorso(MACdestinazione))
+            p = cercaPercorso(MACdestinazione);
+        else{
+            p=myDev.getPercorso(MACdestinazione);
+        }
+        if(p==null) {
+            //TODO stampare che non si è trovato un percorso
+        }
+        else {
+            Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione));
+            BtUtil.inviaMess(m,p.getNextHop());
+        }
+    }
 
     private class HandlerReq extends Thread {
         public void run() {
@@ -84,7 +101,7 @@ public class AODV {
             nuovoRR.setLast_sender(myDev.getMACAddress());
             for (Node n : vicini) {
                 if (!rr.getLast_sender().equals(n)) {
-                    BtUtil.inviaRREQ(rr,n.getMACAddress());
+                    BtUtil.inviaRREQ(rr, n.getMACAddress());
                 }
             }
         }
@@ -93,12 +110,14 @@ public class AODV {
             int seqDest = p.getSequenceNumber();
             int numHopDaQuiADest = p.getNumeroHop();
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), seqDest, numHopDaQuiADest, myDev.getMACAddress());
-            BtUtil.inviaRREP(routeRep,rr.getLast_sender());
+            myDev.incrementaSeqNum();
+            BtUtil.inviaRREP(routeRep, rr.getLast_sender());
         }
 
         private void reply(RouteRequest rr) { //l'hop count è sicuramente 1 in questo momento, poi (probablilmente) verrà incrementato
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), myDev.getSequenceNumber(), 1, myDev.getMACAddress());
-            BtUtil.inviaRREP(routeRep,rr.getLast_sender());
+            myDev.incrementaSeqNum();
+            BtUtil.inviaRREP(routeRep, rr.getLast_sender());
         }
     }
 
@@ -123,8 +142,38 @@ public class AODV {
 
         private void rilanciaReply(RouteReply rr) {
             String MACNextHop = myDev.getPercorso(rr.getSource_addr()).getNextHop();
-            BtUtil.inviaRREP(rr,MACNextHop);
+            myDev.incrementaSeqNum();
+            BtUtil.inviaRREP(rr, MACNextHop);
         }
     }
+
+    private class HandlerMex extends Thread {
+        public void run() {
+            while (true) {
+                Messaggio mess = BtUtil.riceviMessaggio();
+                if(mess.getDest().getMACAddress().equals(myDev.getMACAddress())) {
+                    BtUtil.mostraMess(mess.getMex());
+                }
+                else {
+                    rilanciaMess(mess);
+                }
+
+            }
+
+        }
+
+        private void rilanciaMess(Messaggio mess) {
+            String dest = mess.getDest().getMACAddress();
+            Percorso p = myDev.getPercorso(dest);
+            if(p!=null) {
+                BtUtil.inviaMess(mess, p.getNextHop());//manda al nodo successivo
+                Log.d("invio al nodo succ", dest);
+            }
+            else {
+                Log.d("Non esite il percorso", dest);
+            }
+        }
+    }
+
 
 }

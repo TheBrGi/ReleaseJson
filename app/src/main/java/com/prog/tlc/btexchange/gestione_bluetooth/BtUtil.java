@@ -14,6 +14,7 @@ import android.util.Log;
 import android.widget.Toast;
 import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
+import com.prog.tlc.btexchange.protocollo.Messaggio;
 import com.prog.tlc.btexchange.protocollo.NeighborGreeting;
 import com.prog.tlc.btexchange.protocollo.RouteReply;
 import com.prog.tlc.btexchange.protocollo.RouteRequest;
@@ -45,8 +46,8 @@ public class BtUtil {
     private static ArrayList<BluetoothDevice> deviceVisibili = new ArrayList<>();
     private static ConcurrentLinkedQueue<RouteRequest> rreqs = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<RouteReply> rreps = new ConcurrentLinkedQueue<>();
-    private static ConcurrentLinkedQueue<Object> messages = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<NeighborGreeting> greetings = new ConcurrentLinkedQueue<>();
+    private static ConcurrentLinkedQueue<Messaggio> messages = new ConcurrentLinkedQueue<>();
 
     private static BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -182,6 +183,11 @@ public class BtUtil {
         mandaMessaggio(dest,rr);
     }
 
+    public static void inviaMess(Messaggio m, String MAC) {
+        BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
+        mandaMessaggio(dest,m);
+    }
+
     public static RouteRequest riceviRichiesta() {
         while (true) {
             if (!rreqs.isEmpty()) {
@@ -215,6 +221,20 @@ public class BtUtil {
             if (!greetings.isEmpty()) {
                 NeighborGreeting ng = greetings.poll();
                 return ng;
+            }
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static Messaggio riceviMessaggio() {
+        while (true) {
+            if (!messages.isEmpty()) {
+                Messaggio m = messages.poll();
+                return m;
             }
             try {
                 Thread.sleep(300);
@@ -264,6 +284,17 @@ public class BtUtil {
         mainActivity.registerReceiver(receiver, filter);
         filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         mainActivity.registerReceiver(receiver, filter);
+    }
+
+    public static void mostraMess(final String mex) {
+        mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Toast t=Toast.makeText(getContext(),mex,Toast.LENGTH_SHORT);
+                t.show();
+            }
+        });
+
     }
 
     private static class ConnectThread extends Thread {
@@ -365,8 +396,8 @@ public class BtUtil {
                     else if(ric instanceof RouteRequest) {
                         rreqs.add((RouteRequest) ric);
                     }
-                    else if(ric instanceof Object) {
-                        messages.add(ric);
+                    else if(ric instanceof Messaggio) {
+                        messages.add((Messaggio) ric);
                     }
                     // Send the obtained bytes to the UI activity
                     //mHandler.obtainMessage(MESSAGE_READ, obj).sendToTarget();

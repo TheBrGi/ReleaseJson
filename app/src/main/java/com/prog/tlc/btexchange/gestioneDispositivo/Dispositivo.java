@@ -66,9 +66,11 @@ public class Dispositivo {
         }
     }
 
-    public void aggiungiPercorso(Percorso p) {
+    public void aggiungiPercorso(Percorso p) { //modifica la tabella basandosi sui sequence number
         String destinazione = p.getDestinazione();
-        tabellaDiRouting.put(destinazione, p);
+        int destNumberAttuale = tabellaDiRouting.get(destinazione).getSequenceNumber();
+        if(destNumberAttuale<p.getSequenceNumber())
+            tabellaDiRouting.put(destinazione, p);
     }
 
     public boolean esistePercorso(String destinazione) {
