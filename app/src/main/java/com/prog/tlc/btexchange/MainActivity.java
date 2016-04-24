@@ -41,15 +41,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private ListView lv;
     private ArrayAdapter<String> adapter = null;
     IntentFilter filter;
-    BroadcastReceiver receiver;
-    ArrayList<BluetoothDevice> devices;
     String tag = "debugging";
     BluetoothAdapter btAdapter;
     public static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
@@ -57,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private Dispositivo mioDispositivo;
     private final long TEMPO_ATTESA_VICINI = 7500;
     private boolean sending = false;
-
+    ArrayList<Node> vicini;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,35 +80,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        turnOnBT();
+        BtUtil.setActivity(this);
         btAdapter = BluetoothAdapter.getDefaultAdapter();
-        filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        devices = new ArrayList<BluetoothDevice>();
-        receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    devices.add(device);
-                    Log.d("device trovato", device.toString());
-                    adapter.add(device.getName() + "\n" + device.getAddress());
-                } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-                    // run some code
-                } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                    // run some code
-                } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
-                    if (btAdapter.getState() == btAdapter.STATE_OFF) {
-                        BtUtil.stopServer();
-                        turnOnBT();
-                    } else if (btAdapter.getState() == btAdapter.STATE_ON) {
-                        if (BtUtil.isInterrupted()) {
-                            BtUtil.startServer();
-                        }
-                    }
-                }
-            }
-        };
 
 
         lv = (ListView) findViewById(R.id.listview);
@@ -126,10 +96,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 //Toast t = Toast.makeText(getApplicationContext(), s, Toast.LENGTH_SHORT);
                 //t.show();
                 String obj = "Ciao da " + BtUtil.getBtAdapter().getName();
-                if (btAdapter.isDiscovering()) {
-                    btAdapter.cancelDiscovery();
-                }
-                BluetoothDevice selectedDevice = devices.get(position);
+                Node nodo = vicini.get(position);
+                BluetoothDevice selectedDevice = btAdapter.getRemoteDevice(nodo.getMACAddress());
+
                 BtUtil.mandaMessaggio(selectedDevice, obj);
                 Log.i(tag, "in click listener");
                 //BtUtil.mandaStringa(obj, split[1]);
@@ -143,22 +112,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }
         BtUtil.startServer();*/
+
+
     }
 
-    private void startDiscovery() {
-        btAdapter.cancelDiscovery();
-        devices.clear();
-        adapter.clear();
-        btAdapter.startDiscovery();
-    }
-
-    private void turnOnBT() {
-        //Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-        //startActivityForResult(intent, 1);
-        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
-        startActivityForResult(discoverableIntent, 1);
-    }
 
     private void stampaNodiAVideo() {
         Runnable r = new Runnable() {
@@ -166,10 +123,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             public void run() {
                 while (true) {
                     adapter.clear(); //TODO controllare che stampi i nodi giusti
-                    LinkedList<Node> tuttiNodi = new LinkedList<>(mioDispositivo.getListaNodi());
-                    tuttiNodi.removeFirst();
-                    adapter.addAll((Collection) tuttiNodi);
-                    tuttiNodi = null;
+                    vicini = BtUtil.cercaVicini();
+                    adapter.addAll((Collection) vicini);
                     try {
                         wait(1000);
                     } catch (InterruptedException e) {
@@ -183,20 +138,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
 
     public void scan(View v) {
-        //BtUtil.enableBt();
-        load();
+        Log.d(tag, "cerco devices");
+        stampaNodiAVideo();
     }
 
-    void load() {
-        startDiscovery();
-        Log.d(tag, "cerco devices");
-    }
 
     @Override
     protected void onPause() {
         super.onPause();
         try {
-            unregisterReceiver(receiver);
+            BtUtil.unregisterReceiver();
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
@@ -223,13 +174,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 }
             }
             BtUtil.startServer();
-            registerReceiver(receiver, filter);
-            filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-            registerReceiver(receiver, filter);
-            filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-            registerReceiver(receiver, filter);
-            filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-            registerReceiver(receiver, filter);
+            BtUtil.registerReceiver();
+
         }
     }
     /*@Override

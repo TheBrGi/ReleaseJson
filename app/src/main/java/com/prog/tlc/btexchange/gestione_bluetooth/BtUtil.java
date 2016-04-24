@@ -1,6 +1,5 @@
 package com.prog.tlc.btexchange.gestione_bluetooth;
 
-import android.app.Application;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
@@ -14,6 +13,7 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
 
 import com.prog.tlc.btexchange.protocollo.NeighborGreeting;
@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,16 +32,44 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by BrGi on 16/03/2016.
  */
 public class BtUtil {
+    public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA = 10000;
+    private final static long ATTESA_DISCOVERY = 4000;
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
     private static String tag = "BtExchange debug:";
+    private static IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
     private static AcceptThread acceptThread;
     protected static final int SUCCESS_CONNECT = 0;
     protected static final int MESSAGE_READ = 1;
     private static ConcurrentHashMap<String, BluetoothSocket> sockets = new ConcurrentHashMap<>();
+    private static ArrayList<BluetoothDevice> deviceVisibili = new ArrayList<>();
+
+    private static BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                deviceVisibili.add(device);
+                Log.d("device trovato", device.toString());
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
+                // run some code
+            } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                // run some code
+            } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                if (btAdapter.getState() == btAdapter.STATE_OFF) {
+                    BtUtil.stopServer();
+                    accendiBt();
+                } else if (btAdapter.getState() == btAdapter.STATE_ON) {
+                    if (BtUtil.isInterrupted()) {
+                        BtUtil.startServer();
+                    }
+                }
+            }
+        }
+    };
     static Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -72,6 +101,16 @@ public class BtUtil {
     private BtUtil() {
     }
 
+    public static void setActivity(MainActivity activity) {
+        mainActivity=activity;
+    }
+
+    public static void accendiBt(){
+        Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+        discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
+        mainActivity.startActivityForResult(discoverableIntent, 1);
+    }
+
     public static void startServer() {
         acceptThread=new AcceptThread();
         acceptThread.start();
@@ -96,38 +135,27 @@ public class BtUtil {
         return context;
     }
 
-
     public static BluetoothAdapter getBtAdapter() {
         return BluetoothAdapter.getDefaultAdapter();
     }
 
+    public static ArrayList<BluetoothDevice> getViciniVisibli() { return  deviceVisibili; }
 
-    public static LinkedList<Node> cercaVicini() {
-        final LinkedList<Node> lista = new LinkedList<>();
-        final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                // When discovery finds a device
-                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                    // Get the BluetoothDevice object from the Intent
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    // Add the name and address to an array adapter to show in a ListView
-                    lista.add(new Node(device.getName(), device.getAddress()));
-                }
-            }
-        };
-        // Register the BroadcastReceiver
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        Context context = getContext();
-        context.registerReceiver(mReceiver, filter); // Don't forget to unregister during onDestroy
-        getBtAdapter().startDiscovery();
+    public static ArrayList<Node> cercaVicini() {
+        deviceVisibili.clear();
+        btAdapter.startDiscovery();
         try {
-            Thread.sleep(ATTESA);
+            Thread.sleep(ATTESA_DISCOVERY);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        context.unregisterReceiver(mReceiver);
-        return lista;
+        btAdapter.cancelDiscovery();
+        ArrayList<Node> list=new ArrayList<>();
+        for(BluetoothDevice bd: deviceVisibili) {
+            Node n = new Node(bd.getName(),bd.getAddress());
+            list.add(n);
+        }
+        return list;
     }
 
     public static String riceviStringa() {
@@ -156,6 +184,9 @@ public class BtUtil {
     }
 
     public static void mandaMessaggio(BluetoothDevice selectedDevice, String obj) {
+        if (btAdapter.isDiscovering()) {
+            btAdapter.cancelDiscovery();
+        }
         if (sockets.containsKey(selectedDevice.getAddress())) {
             BluetoothSocket k = sockets.get(selectedDevice.getAddress());
             if (k.isConnected()) {
@@ -172,6 +203,20 @@ public class BtUtil {
             ConnectThread connect = new ConnectThread(selectedDevice, obj);
             connect.start();
         }
+    }
+
+    public static void unregisterReceiver() throws IllegalArgumentException{
+        mainActivity.unregisterReceiver(receiver);
+    }
+
+    public static void registerReceiver() {
+        mainActivity.registerReceiver(receiver, filter);
+        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        mainActivity.registerReceiver(receiver, filter);
+        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        mainActivity.registerReceiver(receiver, filter);
+        filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        mainActivity.registerReceiver(receiver, filter);
     }
 
     private static class ConnectThread extends Thread {
