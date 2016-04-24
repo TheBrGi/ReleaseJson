@@ -1,9 +1,11 @@
 package com.prog.tlc.btexchange.gestioneDispositivo;
 
+import java.io.Serializable;
+
 /**
  * Created by Domenico on 10/03/2016.
  */
-public class Percorso {
+public class Percorso implements Serializable{
     private String destinazione, nextHop; //MACaddress di destinazione e nexthop
     private int numeroHop,sequenceNumber;
 

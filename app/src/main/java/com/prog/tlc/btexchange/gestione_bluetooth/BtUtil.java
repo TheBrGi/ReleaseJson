@@ -141,7 +141,9 @@ public class BtUtil {
         return btAdapter;
     }
 
-    public static ArrayList<BluetoothDevice> getViciniVisibli() { return  deviceVisibili; }
+    public static String getMACMioDispositivo() {
+        return BluetoothAdapter.getDefaultAdapter().getAddress();
+    }
 
     public static ArrayList<Node> cercaVicini() {
         Log.d(tag,"chiamata cerca vicini");
@@ -165,18 +167,47 @@ public class BtUtil {
         return list;
     }
 
-    public static String riceviStringa() {
-
-        return null;
-    }
-
-    public static void mandaStringa(final String s, final String addr) {
-
-    }
-
-    public static void inviaGreeting(NeighborGreeting greet, Node vicino) {
-        BluetoothDevice dest = btAdapter.getRemoteDevice(vicino.getMACAddress());
+    public static void inviaGreeting(NeighborGreeting greet, String MAC) {
+        BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
         mandaMessaggio(dest,greet);
+    }
+
+    public static void inviaRREQ(RouteRequest rr, String MAC) {
+        BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
+        mandaMessaggio(dest,rr);
+    }
+
+    public static void inviaRREP(RouteReply rr, String MAC) {
+        BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
+        mandaMessaggio(dest,rr);
+    }
+
+    public static RouteRequest riceviRichiesta() {
+        while (true) {
+            if (!rreqs.isEmpty()) {
+                RouteRequest rr = rreqs.poll();
+                return rr;
+            }
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static RouteReply riceviRisposta() {
+        while (true) {
+            if (!rreps.isEmpty()) {
+                RouteReply rr = rreps.poll();
+                return rr;
+            }
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static NeighborGreeting riceviGreeting() {
@@ -193,9 +224,6 @@ public class BtUtil {
         }
     }
 
-    public static String getMACMioDispositivo() {
-        return BluetoothAdapter.getDefaultAdapter().getAddress();
-    }
 
     public static void mandaMessaggio(BluetoothDevice selectedDevice, Object obj) {
         /*if (btAdapter.isDiscovering()) {

@@ -35,7 +35,7 @@ public class GestoreVicini extends Thread {
             vicini = BtUtil.cercaVicini();
             NeighborGreeting ng = new NeighborGreeting(myDisp.getMACAddress(), myDisp.getListaNodi());
             for (Node vicino : vicini) {
-                BtUtil.inviaGreeting(ng, vicino);
+                BtUtil.inviaGreeting(ng, vicino.getMACAddress());
             }
             try {
                 this.sleep(ATTESA);

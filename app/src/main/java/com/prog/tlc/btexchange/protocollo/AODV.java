@@ -1,6 +1,7 @@
 package com.prog.tlc.btexchange.protocollo;
 
 import com.prog.tlc.btexchange.gestioneDispositivo.*;
+import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
 
 import java.util.List;
 
@@ -27,13 +28,13 @@ public class AODV {
         RouteRequest req = new RouteRequest(myDev.getMACAddress(), myDev.getSequenceNumber(), dest, destSeqNumber, hopCount, myDev.getMACAddress());
         List<Node> vicini = gestoreVicini.getVicini();
         for (Node vicino : vicini) {
-            //TODO inviaRREQ(req,vicino.getMACAddress());
+            BtUtil.inviaRREQ(req,vicino.getMACAddress());
         }
         myDev.incrementaSeqNum();
         //ora ci mettiamo in attesa della reply
         for (int i = 0; i < 20; i++) {
             try {
-                Thread.sleep(1500);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -47,7 +48,7 @@ public class AODV {
     private class HandlerReq extends Thread {
         public void run() {
             while (true) {
-                RouteRequest rr = null;//TODO RouteRequest rr = ascoltaRichiesta(); metodo statico del bt
+                RouteRequest rr = BtUtil.riceviRichiesta();
                 if (!myDev.getRREQRicevuti().containsKey(rr.getSource_addr())) {
                     gestisciRREQ(rr);
                     myDev.aggiungiRREQ(rr);
@@ -83,36 +84,29 @@ public class AODV {
             nuovoRR.setLast_sender(myDev.getMACAddress());
             for (Node n : vicini) {
                 if (!rr.getLast_sender().equals(n)) {
-                    //TODO inviaRREQ(nuovoRR,MAC)           ******BT
+                    BtUtil.inviaRREQ(rr,n.getMACAddress());
                 }
             }
-            rr = null;
         }
 
         private void reply(RouteRequest rr, Percorso p) { //il source sarà sempre tale sia in un verso che nell'altro
             int seqDest = p.getSequenceNumber();
             int numHopDaQuiADest = p.getNumeroHop();
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), seqDest, numHopDaQuiADest, myDev.getMACAddress());
-            //TODO inviaRREP(routeRep,rr.getLast_sender());
-            rr = null;
+            BtUtil.inviaRREP(routeRep,rr.getLast_sender());
         }
 
         private void reply(RouteRequest rr) { //l'hop count è sicuramente 1 in questo momento, poi (probablilmente) verrà incrementato
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), myDev.getSequenceNumber(), 1, myDev.getMACAddress());
-            /*TODO funzionalita bt che invia il nuovo route reply al nodo che ha inviato la richiesta(last sender) specificato nei
-                parametri
-                inviaRREP(routeRep,rr.getLast_sender());
-             */
-            rr = null;
+            BtUtil.inviaRREP(routeRep,rr.getLast_sender());
         }
     }
 
 
-    private class HandlerReply extends Thread { //TODO gestire incremento di hop nel reply
+    private class HandlerReply extends Thread {
         public void run() {
             while (true) {
-                //TODO RouteReply rr = ascoltaRichiesta(); metodo statico del bt
-                RouteReply rr = null;
+                RouteReply rr = BtUtil.riceviRisposta();
                 estrapolaPercorsoRREP(rr);
                 if (!rr.getSource_addr().equals(myDev.getMACAddress())) { //non siamo noi la sorgente
                     rr.incrementaHop_cnt();
@@ -129,7 +123,7 @@ public class AODV {
 
         private void rilanciaReply(RouteReply rr) {
             String MACNextHop = myDev.getPercorso(rr.getSource_addr()).getNextHop();
-            //TODO funzionalità bluetooh inviaRREP(rr,MACNextHop)
+            BtUtil.inviaRREP(rr,MACNextHop);
         }
     }
 
