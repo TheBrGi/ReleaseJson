@@ -37,7 +37,7 @@ public class BtUtil {
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
     private static String tag = "BtExchange debug:";
-    private static AcceptThread acceptThread = new AcceptThread();
+    private static AcceptThread acceptThread;
     protected static final int SUCCESS_CONNECT = 0;
     protected static final int MESSAGE_READ = 1;
     private static ConcurrentHashMap<String, BluetoothSocket> sockets = new ConcurrentHashMap<>();
@@ -73,12 +73,15 @@ public class BtUtil {
     }
 
     public static void startServer() {
+        acceptThread=new AcceptThread();
         acceptThread.start();
+        Log.d(tag,"start AcceptThread");
     }
 
     public static void stopServer() {
         acceptThread.cancel();
         acceptThread.interrupt();
+        Log.d(tag,"stop AcceptThread");
     }
 
     public static boolean isInterrupted() {
@@ -154,19 +157,19 @@ public class BtUtil {
 
     public static void mandaMessaggio(BluetoothDevice selectedDevice, String obj) {
         if (sockets.containsKey(selectedDevice.getAddress())) {
-            BluetoothSocket k=sockets.get(selectedDevice.getAddress());
-            if (k.isConnected()){
-                Log.d(tag,"socket presente, mando msg");
+            BluetoothSocket k = sockets.get(selectedDevice.getAddress());
+            if (k.isConnected()) {
+                Log.d(tag, "socket presente, mando msg");
                 new ConnectedThread(k).write(obj);
-            }else{
-                Log.d(tag,"socket disconnesso, riconnetto");
+            } else {
+                Log.d(tag, "socket disconnesso, riconnetto");
                 sockets.remove(selectedDevice.getAddress());
-                ConnectThread connect = new ConnectThread(selectedDevice);
+                ConnectThread connect = new ConnectThread(selectedDevice, obj);
                 connect.start();
             }
         } else {
-            Log.d(tag,"socket non presente in map, connetto");
-            ConnectThread connect = new ConnectThread(selectedDevice);
+            Log.d(tag, "socket non presente in map, connetto");
+            ConnectThread connect = new ConnectThread(selectedDevice, obj);
             connect.start();
         }
     }
@@ -175,10 +178,12 @@ public class BtUtil {
 
         private final BluetoothSocket mmSocket;
         private final BluetoothDevice mmDevice;
+        private Object obj;
 
-        public ConnectThread(BluetoothDevice device) {
+        public ConnectThread(BluetoothDevice device, Object obj) {
             // Use a temporary object that is later assigned to mmSocket,
             // because mmSocket is final
+            this.obj = obj;
             BluetoothSocket tmp = null;
             mmDevice = device;
             Log.i(tag, "construct");
@@ -213,7 +218,7 @@ public class BtUtil {
             }
 
             // Do work to manage the connection (in a separate thread)
-
+            new ConnectedThread(mmSocket).write(obj);
             mHandler.obtainMessage(SUCCESS_CONNECT, mmSocket).sendToTarget();
         }
 

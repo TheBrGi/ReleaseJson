@@ -113,13 +113,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         };
 
-        registerReceiver(receiver, filter);
-        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
-        registerReceiver(receiver, filter);
-        filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
-        registerReceiver(receiver, filter);
-        filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-        registerReceiver(receiver, filter);
 
         lv = (ListView) findViewById(R.id.listview);
         adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
@@ -142,9 +135,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 //BtUtil.mandaStringa(obj, split[1]);
             }
         });
-        while (btAdapter.getState() != btAdapter.STATE_ON) {
+        /*while (btAdapter.getState() != btAdapter.STATE_ON) {
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-        BtUtil.startServer();
+        BtUtil.startServer();*/
     }
 
     private void startDiscovery() {
@@ -197,8 +195,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onPause() {
         super.onPause();
-        if (receiver.isOrderedBroadcast())
+        try {
             unregisterReceiver(receiver);
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -213,6 +214,22 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (resultCode == RESULT_CANCELED) {
             Toast.makeText(getApplicationContext(), "Bluetooth must be enabled to continue", Toast.LENGTH_SHORT).show();
             finish();
+        } else {
+            while (btAdapter.getState() != btAdapter.STATE_ON) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            BtUtil.startServer();
+            registerReceiver(receiver, filter);
+            filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+            registerReceiver(receiver, filter);
+            filter = new IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+            registerReceiver(receiver, filter);
+            filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+            registerReceiver(receiver, filter);
         }
     }
     /*@Override
