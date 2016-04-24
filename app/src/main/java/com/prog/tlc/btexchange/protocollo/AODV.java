@@ -22,6 +22,7 @@ public class AODV {
         gestoreVicini.start();
         //new HandlerReq().start();
         //new HandlerReply().start();
+        //new HandlerMex().start();
     }
 
 
@@ -48,16 +49,19 @@ public class AODV {
 
     public void inviaMessaggio(String MACdestinazione, String contenuto, String nomeDest) {
         Percorso p=null;
-        if(!myDev.esistePercorso(MACdestinazione))
+        if(!myDev.esistePercorso(MACdestinazione)) {
+            Log.d("ricerco il percorso per", nomeDest);
             p = cercaPercorso(MACdestinazione);
+        }
         else{
             p=myDev.getPercorso(MACdestinazione);
         }
         if(p==null) {
-            //TODO stampare che non si è trovato un percorso
+            BtUtil.mostraMess("NON si è trovato nessun percorso!");
         }
         else {
             Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione));
+            Log.d("invio il mex","5143");
             BtUtil.inviaMess(m,p.getNextHop());
         }
     }
@@ -66,6 +70,8 @@ public class AODV {
         public void run() {
             while (true) {
                 RouteRequest rr = BtUtil.riceviRichiesta();
+                String s = "ricevuto REQ da "+rr.getLast_sender();
+                BtUtil.mostraMess(s);
                 if (!myDev.getRREQRicevuti().containsKey(rr.getSource_addr())) {
                     gestisciRREQ(rr);
                     myDev.aggiungiRREQ(rr);
@@ -126,6 +132,8 @@ public class AODV {
         public void run() {
             while (true) {
                 RouteReply rr = BtUtil.riceviRisposta();
+                String s = "ricevuto REPLY da "+rr.getLast_sender();
+                BtUtil.mostraMess(s);
                 estrapolaPercorsoRREP(rr);
                 if (!rr.getSource_addr().equals(myDev.getMACAddress())) { //non siamo noi la sorgente
                     rr.incrementaHop_cnt();
@@ -151,6 +159,8 @@ public class AODV {
         public void run() {
             while (true) {
                 Messaggio mess = BtUtil.riceviMessaggio();
+                String s = "ricevuto MEX per "+mess.getDest();
+                BtUtil.mostraMess(s);
                 if(mess.getDest().getMACAddress().equals(myDev.getMACAddress())) {
                     BtUtil.mostraMess(mess.getMex());
                 }
