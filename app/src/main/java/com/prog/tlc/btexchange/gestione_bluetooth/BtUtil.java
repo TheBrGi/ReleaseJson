@@ -361,24 +361,9 @@ public class BtUtil {
 
     private static class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-
-            // Get the input and output streams, using temp objects because
-            // member streams are final
-            try {
-                tmpIn = socket.getInputStream();
-                tmpOut = socket.getOutputStream();
-            } catch (IOException e) {
-            }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
         }
 
         public void run() {
@@ -387,7 +372,7 @@ public class BtUtil {
             while (true) {
                 try {
                     // Read from the InputStream
-                    ObjectInputStream ois = new ObjectInputStream(mmInStream);
+                    ObjectInputStream ois=new ObjectInputStream(mmSocket.getInputStream());
                     Object ric = ois.readObject();
                     if(ric instanceof NeighborGreeting) {
                         greetings.add((NeighborGreeting) ric);
@@ -403,8 +388,6 @@ public class BtUtil {
                     else if(ric instanceof Messaggio) {
                         messages.add((Messaggio) ric);
                     }
-                    // Send the obtained bytes to the UI activity
-                    //mHandler.obtainMessage(MESSAGE_READ, obj).sendToTarget();
 
                 } catch (IOException e) {
                     Log.d(tag, "lettura fallita");
@@ -416,14 +399,11 @@ public class BtUtil {
             }
         }
 
-        private synchronized void read(){
-
-        }
         /* Call this from the main activity to send data to the remote device */
-        public synchronized void write(Object obj) {
+        public void write(Object obj) {
             try {
                 //mmOutStream.write(bytes);
-                ObjectOutputStream oos = new ObjectOutputStream(mmOutStream);
+                ObjectOutputStream oos=new ObjectOutputStream(mmSocket.getOutputStream());
                 oos.writeObject(obj);
                 String nomeClasse=obj.getClass().getSimpleName();
                 Log.d("write: ",nomeClasse);
