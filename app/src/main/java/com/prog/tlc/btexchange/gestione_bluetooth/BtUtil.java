@@ -1,5 +1,6 @@
 package com.prog.tlc.btexchange.gestione_bluetooth;
 
+import android.app.DownloadManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
@@ -192,6 +193,7 @@ public class BtUtil {
         while (true) {
             if (!rreqs.isEmpty()) {
                 RouteRequest rr = rreqs.poll();
+                Log.d("RiceviRichiesta",rr.getSource_addr());
                 return rr;
             }
             try {
@@ -394,6 +396,8 @@ public class BtUtil {
                         rreps.add((RouteReply) ric);
                     }
                     else if(ric instanceof RouteRequest) {
+                        RouteRequest rr=(RouteRequest)ric;
+                        Log.d("ConnectedThread",rr.getSource_addr());
                         rreqs.add((RouteRequest) ric);
                     }
                     else if(ric instanceof Messaggio) {
@@ -418,6 +422,8 @@ public class BtUtil {
                 //mmOutStream.write(bytes);
                 ObjectOutputStream oos = new ObjectOutputStream(mmOutStream);
                 oos.writeObject(obj);
+                String nomeClasse=obj.getClass().getSimpleName();
+                Log.d("write: ",nomeClasse);
                 oos.flush();
             } catch (IOException e) {
                 Log.d(tag, "invio fallito");

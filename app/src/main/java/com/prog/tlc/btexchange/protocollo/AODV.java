@@ -29,6 +29,8 @@ public class AODV {
     public Percorso cercaPercorso(String dest) { //stiamo già assumendo che non ci sia un percorso valido per dest
         int destSeqNumber = 0, hopCount = 0;
         RouteRequest req = new RouteRequest(myDev.getMACAddress(), myDev.getSequenceNumber(), dest, destSeqNumber, hopCount, myDev.getMACAddress());
+        Log.d("MACaddr", myDev.getMACAddress());
+        Log.d("cercaPercorso:",req.getSource_addr());
         List<Node> vicini = gestoreVicini.getVicini();
         for (Node vicino : vicini) {
             BtUtil.inviaRREQ(req, vicino.getMACAddress());
@@ -60,6 +62,7 @@ public class AODV {
             BtUtil.mostraMess("NON si è trovato nessun percorso!");
         }
         else {
+            Log.d("percorso trovato","42");
             Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione));
             Log.d("invio il mex","5143");
             BtUtil.inviaMess(m,p.getNextHop());
@@ -135,7 +138,21 @@ public class AODV {
                 RouteReply rr = BtUtil.riceviRisposta();
                 String s = "ricevuto REPLY da "+rr.getLast_sender();
                 BtUtil.mostraMess(s);
+                Percorso seEsiste=null;
+                Percorso ricevuto=
+
+
+
+
+                int sequenceNumberSource = myDev.getRREQRicevuti().get(rr.getSource_addr());
+                if (sequenceNumberSource < rr.getSource_sequence_number()) {
+                        gestisciRREQ(rr);
+                        myDev.aggiungiRREQ(rr);
+                    }
+                }
+
                 estrapolaPercorsoRREP(rr);
+
                 if (!rr.getSource_addr().equals(myDev.getMACAddress())) { //non siamo noi la sorgente
                     rr.incrementaHop_cnt();
                     rr.setLast_sender(myDev.getMACAddress());

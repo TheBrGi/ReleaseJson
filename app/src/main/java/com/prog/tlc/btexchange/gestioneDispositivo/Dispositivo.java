@@ -22,7 +22,7 @@ public class Dispositivo {
 
     public Dispositivo(String n) {
         nome = n;
-        String MACAddress = BtUtil.getMACMioDispositivo();
+        MACAddress = BtUtil.getMACMioDispositivo();
         int sequenceNumber = 1;
         listaNodi = Collections.synchronizedList(new LinkedList<Node>());
         listaNodi.add(new Node(n, MACAddress));
@@ -66,11 +66,9 @@ public class Dispositivo {
         }
     }
 
-    public void aggiungiPercorso(Percorso p) { //modifica la tabella basandosi sui sequence number
+    public void aggiungiPercorso(Percorso p) { //aggiunge il percorso
         String destinazione = p.getDestinazione();
-        int destNumberAttuale = tabellaDiRouting.get(destinazione).getSequenceNumber();
-        if(destNumberAttuale<p.getSequenceNumber())
-            tabellaDiRouting.put(destinazione, p);
+        tabellaDiRouting.put(destinazione, p);
     }
 
     public boolean esistePercorso(String destinazione) {
