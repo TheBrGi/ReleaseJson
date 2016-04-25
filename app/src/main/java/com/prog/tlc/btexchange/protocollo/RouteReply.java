@@ -1,9 +1,11 @@
 package com.prog.tlc.btexchange.protocollo;
 
+import java.io.Serializable;
+
 /**
  * Created by BrGi on 12/03/2016.
  */
-public class RouteReply {
+public class RouteReply implements Serializable {
     private String source_addr;
     private String dest_addr;
     private int dest_sequence_number;

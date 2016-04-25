@@ -408,7 +408,7 @@ public class BtUtil {
 
                 } catch (IOException e) {
                     Log.d(tag, "lettura fallita");
-                    cancel();
+                    cancel();//TODO
                     break;
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
@@ -416,8 +416,11 @@ public class BtUtil {
             }
         }
 
+        private synchronized void read(){
+
+        }
         /* Call this from the main activity to send data to the remote device */
-        public void write(Object obj) {
+        public synchronized void write(Object obj) {
             try {
                 //mmOutStream.write(bytes);
                 ObjectOutputStream oos = new ObjectOutputStream(mmOutStream);
@@ -427,7 +430,7 @@ public class BtUtil {
                 oos.flush();
             } catch (IOException e) {
                 Log.d(tag, "invio fallito");
-                cancel();
+                cancel();//TODO
             }
         }
 

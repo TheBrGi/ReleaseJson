@@ -92,6 +92,8 @@ public class AODV {
         }
 
         private void gestisciRREQ(RouteRequest rr) {
+            Log.d("BtExc in gestisciRREQ","noi dest?"+String.valueOf(myDev.getMACAddress().equals(rr.getDest_addr())));
+            Log.d("BtExc rreq dest addr",rr.getDest_addr());
             estrapolaPercorsoRREQ(rr);
             if (myDev.getMACAddress().equals(rr.getDest_addr()))  //se siamo noi la destinazione
                 reply(rr);
@@ -102,6 +104,7 @@ public class AODV {
         }
 
         private void estrapolaPercorsoRREQ(RouteRequest rr) {
+            Log.d("BtExc","estrapolaPercorsoRREQ");
                                      //dest, next hop, hop count, seq number
             Percorso p = new Percorso(rr.getSource_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getSource_sequence_number());
             Percorso  seEsiste = myDev.getPercorso(rr.getSource_addr());
