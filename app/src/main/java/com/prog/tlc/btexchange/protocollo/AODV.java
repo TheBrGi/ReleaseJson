@@ -101,7 +101,15 @@ public class AODV {
 
         private void estrapolaPercorsoRREQ(RouteRequest rr) {
             Percorso p = new Percorso(rr.getSource_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getSource_sequence_number());
-            myDev.aggiungiPercorso(p);
+            Percorso  seEsiste = myDev.getPercorso(rr.getSource_addr());
+            if(seEsiste!=null) {
+                int sn = seEsiste.getSequenceNumber();
+                if (sn < p.getSequenceNumber()) {
+                    myDev.aggiungiPercorso(p);
+                }
+            }
+            else
+                myDev.aggiungiPercorso(p);
         }
 
         private void rilanciaRREQ(RouteRequest rr) {
@@ -138,21 +146,7 @@ public class AODV {
                 RouteReply rr = BtUtil.riceviRisposta();
                 String s = "ricevuto REPLY da "+rr.getLast_sender();
                 BtUtil.mostraMess(s);
-                Percorso seEsiste=null;
-                Percorso ricevuto=
-
-
-
-
-                int sequenceNumberSource = myDev.getRREQRicevuti().get(rr.getSource_addr());
-                if (sequenceNumberSource < rr.getSource_sequence_number()) {
-                        gestisciRREQ(rr);
-                        myDev.aggiungiRREQ(rr);
-                    }
-                }
-
                 estrapolaPercorsoRREP(rr);
-
                 if (!rr.getSource_addr().equals(myDev.getMACAddress())) { //non siamo noi la sorgente
                     rr.incrementaHop_cnt();
                     rr.setLast_sender(myDev.getMACAddress());
@@ -163,7 +157,15 @@ public class AODV {
 
         private void estrapolaPercorsoRREP(RouteReply rr) { //il source sarà sempre tale sia in un verso che nell'altro
             Percorso p = new Percorso(rr.getDest_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getDest_sequence_number());
-            myDev.aggiungiPercorso(p);
+            Percorso  seEsiste = myDev.getPercorso(rr.getDest_addr());
+            if(seEsiste!=null) {
+                int sn = seEsiste.getSequenceNumber();
+                if (sn < p.getSequenceNumber()) {
+                    myDev.aggiungiPercorso(p);
+                }
+            }
+            else
+                myDev.aggiungiPercorso(p);
         }
 
         private void rilanciaReply(RouteReply rr) {
