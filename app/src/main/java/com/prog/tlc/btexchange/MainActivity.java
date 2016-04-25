@@ -1,29 +1,30 @@
 package com.prog.tlc.btexchange;
 
 
-import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.prog.tlc.btexchange.gestioneDispositivo.Dispositivo;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
 import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
 import com.prog.tlc.btexchange.protocollo.AODV;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;

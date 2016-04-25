@@ -23,20 +23,20 @@ public class AODV {
         new HandlerReq().start();
         new HandlerReply().start();
         new HandlerMex().start();
+        //handler RERR
     }
 
-
     public Percorso cercaPercorso(String dest) { //stiamo già assumendo che non ci sia un percorso valido per dest
-        int destSeqNumber = 0, hopCount = 0;
+        int destSeqNumber = 0, hopCount = 0;                                                                            //poi conterrà il last sender
         RouteRequest req = new RouteRequest(myDev.getMACAddress(), myDev.getSequenceNumber(), dest, destSeqNumber, hopCount, myDev.getMACAddress());
         Log.d("MACaddr", myDev.getMACAddress());
-        Log.d("cercaPercorso:",req.getSource_addr());
+        Log.d("req sour addr:",req.getSource_addr());
         List<Node> vicini = gestoreVicini.getVicini();
         for (Node vicino : vicini) {
             BtUtil.inviaRREQ(req, vicino.getMACAddress());
         }
         myDev.incrementaSeqNum();
-        //ora ci mettiamo in attesa della reply
+        //ora ci mettiamo in attesa della repljhy
         for (int i = 0; i < 20; i++) {
             try {
                 Thread.sleep(2000);
@@ -65,6 +65,7 @@ public class AODV {
             Log.d("percorso trovato","42");
             Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione));
             Log.d("invio il mex","5143");
+            //mando al next hop fino a dest (eseguito dopo che rep e reply hanno fissato il path)
             BtUtil.inviaMess(m,p.getNextHop());
         }
     }
@@ -76,6 +77,7 @@ public class AODV {
                 String s = "ricevuto REQ da "+rr.getLast_sender();
                 BtUtil.mostraMess(s);
                 Log.d("rreq ricevuta isNull?:",rr.getSource_addr());
+                //flooding controllato
                 if (!myDev.getRREQRicevuti().containsKey(rr.getSource_addr())) {
                     gestisciRREQ(rr);
                     myDev.aggiungiRREQ(rr);
@@ -100,6 +102,7 @@ public class AODV {
         }
 
         private void estrapolaPercorsoRREQ(RouteRequest rr) {
+                                     //dest, next hop, hop count, seq number
             Percorso p = new Percorso(rr.getSource_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getSource_sequence_number());
             Percorso  seEsiste = myDev.getPercorso(rr.getSource_addr());
             if(seEsiste!=null) {
@@ -118,23 +121,26 @@ public class AODV {
             nuovoRR.incrementaHop_cnt();
             nuovoRR.setLast_sender(myDev.getMACAddress());
             for (Node n : vicini) {
+                //mando a tutti i vicini tranne al last sender
                 if (!rr.getLast_sender().equals(n)) {
                     BtUtil.inviaRREQ(rr, n.getMACAddress());
                 }
             }
         }
-
+        //conosco un percorso verso dest
         private void reply(RouteRequest rr, Percorso p) { //il source sarà sempre tale sia in un verso che nell'altro
             int seqDest = p.getSequenceNumber();
             int numHopDaQuiADest = p.getNumeroHop();
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), seqDest, numHopDaQuiADest, myDev.getMACAddress());
             myDev.incrementaSeqNum();
+            Log.d("invio reply perc",rr.getSource_addr());
             BtUtil.inviaRREP(routeRep, rr.getLast_sender());
         }
-
-        private void reply(RouteRequest rr) { //l'hop count è sicuramente 1 in questo momento, poi (probablilmente) verrà incrementato
+        //siamo noi la destinaione
+        private void reply(RouteRequest rr) { //l'hop count è sicuramente 1 in questo momento, poi (probabilmente) verrà incrementato
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), myDev.getSequenceNumber(), 1, myDev.getMACAddress());
             myDev.incrementaSeqNum();
+            Log.d("invio reply dest",rr.getSource_addr());
             BtUtil.inviaRREP(routeRep, rr.getLast_sender());
         }
     }
@@ -147,11 +153,12 @@ public class AODV {
                 String s = "ricevuto REPLY da "+rr.getLast_sender();
                 BtUtil.mostraMess(s);
                 estrapolaPercorsoRREP(rr);
-                if (!rr.getSource_addr().equals(myDev.getMACAddress())) { //non siamo noi la sorgente
+                if (!rr.getSource_addr().equals(myDev.getMACAddress())) { //non siamo noi la sorgente, quindi ripropaghiamo per arrivare ad essa
                     rr.incrementaHop_cnt();
                     rr.setLast_sender(myDev.getMACAddress());
                     rilanciaReply(rr);
                 }
+                //non facciamo niente
             }
         }
 
@@ -171,6 +178,7 @@ public class AODV {
         private void rilanciaReply(RouteReply rr) {
             String MACNextHop = myDev.getPercorso(rr.getSource_addr()).getNextHop();
             myDev.incrementaSeqNum();
+            Log.d("rilancia reply verso",MACNextHop);
             BtUtil.inviaRREP(rr, MACNextHop);
         }
     }
