@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 while (true) {
                     //TODO controllare che stampi i nodi giusti
                     vicini = new ArrayList<>(mioDispositivo.getListaNodi());
-
+                    vicini.remove(0); //elimina il nostro device da quelli visibili a schermo
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {

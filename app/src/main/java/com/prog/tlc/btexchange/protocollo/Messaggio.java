@@ -10,10 +10,14 @@ import java.io.Serializable;
 public class Messaggio implements Serializable {
     private String mex;
     private Node dest;
+    private String lastSender;
+    private String source;
 
-    public Messaggio(String s, Node dest) {
+    public Messaggio(String s, Node dest,String lastSender, String source) {
         this.mex = s;
         this.dest = dest;
+        this.lastSender = lastSender;
+        this.source = source;
     }
 
     public String getMex() {
@@ -23,4 +27,8 @@ public class Messaggio implements Serializable {
     public Node getDest() {
         return dest;
     }
+
+    public String getLastSender() { return  lastSender; }
+
+    public String getSource() { return source; }
 }

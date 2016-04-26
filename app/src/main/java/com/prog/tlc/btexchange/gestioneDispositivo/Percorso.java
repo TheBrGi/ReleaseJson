@@ -8,20 +8,17 @@ import java.io.Serializable;
 //RIGA NELLA TABELLA DI ROUTING(record in hasmap di percorsi)
 public class Percorso implements Serializable{
     private String destinazione, nextHop; //MACaddress di destinazione e nexthop
-    private int numeroHop,sequenceNumber;
+    private int numeroHop;
+    private long sequenceNumber;
 
-    public Percorso(String dest, String nextH, int nHop,int sequenceNumber){
+    public Percorso(String dest, String nextH, int nHop,long sequenceNumber){
         destinazione = dest;
         nextHop = nextH;
         numeroHop = nHop;
         this.sequenceNumber = sequenceNumber;
     }
-    public int getSequenceNumber() {
+    public long getSequenceNumber() {
         return sequenceNumber;
-    }
-
-    public void setSequenceNumber(int sq) {
-        sequenceNumber = sq;
     }
 
     public String getDestinazione() {

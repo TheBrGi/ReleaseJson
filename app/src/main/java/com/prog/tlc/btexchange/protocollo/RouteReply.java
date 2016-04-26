@@ -8,12 +8,12 @@ import java.io.Serializable;
 public class RouteReply implements Serializable {
     private String source_addr;
     private String dest_addr;
-    private int dest_sequence_number;
+    private long dest_sequence_number;
     private int hop_cnt;
     private String last_sender; /*indirizzo MAC del nodo che ha appena inviato questa RREP*/
 
 
-    public RouteReply(String source_addr, String dest_addr, int dest_sequence_number, int hop_cnt, String last_sender) {
+    public RouteReply(String source_addr, String dest_addr, long dest_sequence_number, int hop_cnt, String last_sender) {
         this.source_addr = source_addr;
         this.dest_addr = dest_addr;
         this.dest_sequence_number = dest_sequence_number;
@@ -38,7 +38,7 @@ public class RouteReply implements Serializable {
         return dest_addr;
     }
 
-    public int getDest_sequence_number() {
+    public long getDest_sequence_number() {
         return dest_sequence_number;
     }
 

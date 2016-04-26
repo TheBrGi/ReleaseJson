@@ -2,9 +2,8 @@ package com.prog.tlc.btexchange.gestioneDispositivo;
 
 import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
 import com.prog.tlc.btexchange.protocollo.RouteRequest;
-
+import java.util.Calendar;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,15 +14,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Dispositivo {
     private List<Node> listaNodi;
     private ConcurrentHashMap<String, Percorso> tabellaDiRouting;
-    private ConcurrentHashMap<String, Integer> RREQRicevuti;
+    private ConcurrentHashMap<String, Long> RREQRicevuti;
     private String nome, MACAddress;
-    private int sequenceNumber;//si incrementa dopo l'avvio di una route discovery o di una reply
+    private long sequenceNumber; //si incrementa dopo una req o una reply
+
 
 
     public Dispositivo(String n) {
         nome = n;
         MACAddress = BtUtil.getMACMioDispositivo();
-        sequenceNumber = 1;
+        sequenceNumber = Calendar.getInstance().getTimeInMillis();
         listaNodi = Collections.synchronizedList(new LinkedList<Node>());
         listaNodi.add(new Node(n, MACAddress));
         tabellaDiRouting = new ConcurrentHashMap<>();
@@ -46,12 +46,12 @@ public class Dispositivo {
         return MACAddress;
     }
 
-    public int getSequenceNumber() {
+    public long getSequenceNumber() {
         return sequenceNumber;
     }
 
     public void incrementaSeqNum() {
-        sequenceNumber++;
+        sequenceNumber = Calendar.getInstance().getTimeInMillis(); ;
     }
 
     public void aggiungiNodo(Node n) {
@@ -75,13 +75,18 @@ public class Dispositivo {
         return tabellaDiRouting.containsKey(destinazione);
     }
 
+    public void rimuoviPercorso(String destinazione) {
+        if(esistePercorso(destinazione))
+            tabellaDiRouting.remove(destinazione);
+    }
+
     public Percorso getPercorso(String destinazione) {
         if (esistePercorso(destinazione))
             return tabellaDiRouting.get(destinazione);
         return null;
     }
 
-    public ConcurrentHashMap<String, Integer> getRREQRicevuti() {
+    public ConcurrentHashMap<String, Long> getRREQRicevuti() {
         return RREQRicevuti;
     }
 

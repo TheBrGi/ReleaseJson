@@ -23,7 +23,7 @@ public class AODV {
         new HandlerReq().start();
         new HandlerReply().start();
         new HandlerMex().start();
-        //handler RERR
+        new HandlerError().start();
     }
 
     public Percorso cercaPercorso(String dest) { //stiamo già assumendo che non ci sia un percorso valido per dest
@@ -37,7 +37,7 @@ public class AODV {
         }
         myDev.incrementaSeqNum();
         //ora ci mettiamo in attesa della repljhy
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 5; i++) {
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
@@ -51,6 +51,7 @@ public class AODV {
 
     public void inviaMessaggio(String MACdestinazione, String contenuto, String nomeDest) {
         Percorso p=null;
+        boolean connessioneOk=false;
         if(!myDev.esistePercorso(MACdestinazione)) {
             Log.d("ricerco il percorso per", nomeDest);
             p = cercaPercorso(MACdestinazione);
@@ -63,10 +64,16 @@ public class AODV {
         }
         else {
             Log.d("percorso trovato","42");
-            Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione));
+            Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione),myDev.getMACAddress(),myDev.getMACAddress());
             Log.d("invio il mex","5143");
             //mando al next hop fino a dest (eseguito dopo che rep e reply hanno fissato il path)
             BtUtil.inviaMess(m,p.getNextHop());
+            connessioneOk = BtUtil.checkSocket(p.getNextHop());
+        }
+        if(!connessioneOk) {
+            myDev.rimuoviPercorso(MACdestinazione);
+            String daMostrare = "ERRORE! Il percorso non è più disponibile "+MACdestinazione;
+            BtUtil.mostraMess(daMostrare);
         }
     }
 
@@ -82,7 +89,7 @@ public class AODV {
                     gestisciRREQ(rr);
                     myDev.aggiungiRREQ(rr);
                 } else { // potrebbe andare male
-                    int sequenceNumberSource = myDev.getRREQRicevuti().get(rr.getSource_addr());
+                    long sequenceNumberSource = myDev.getRREQRicevuti().get(rr.getSource_addr());
                     if (sequenceNumberSource < rr.getSource_sequence_number()) {
                         gestisciRREQ(rr);
                         myDev.aggiungiRREQ(rr);
@@ -109,7 +116,7 @@ public class AODV {
             Percorso p = new Percorso(rr.getSource_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getSource_sequence_number());
             Percorso  seEsiste = myDev.getPercorso(rr.getSource_addr());
             if(seEsiste!=null) {
-                int sn = seEsiste.getSequenceNumber();
+                long sn = seEsiste.getSequenceNumber();
                 if (sn < p.getSequenceNumber()) {
                     myDev.aggiungiPercorso(p);
                 }
@@ -125,18 +132,18 @@ public class AODV {
             nuovoRR.setLast_sender(myDev.getMACAddress());
             for (Node n : vicini) {
                 //mando a tutti i vicini tranne al last sender
-                if (!rr.getLast_sender().equals(n)) {
+                if (!rr.getLast_sender().equals(n.getMACAddress())) {
                     BtUtil.inviaRREQ(rr, n.getMACAddress());
                 }
             }
         }
         //conosco un percorso verso dest
         private void reply(RouteRequest rr, Percorso p) { //il source sarà sempre tale sia in un verso che nell'altro
-            int seqDest = p.getSequenceNumber();
+            long seqDest = p.getSequenceNumber();
             int numHopDaQuiADest = p.getNumeroHop();
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), seqDest, numHopDaQuiADest, myDev.getMACAddress());
             myDev.incrementaSeqNum();
-            Log.d("invio reply perc",rr.getSource_addr());
+            Log.d("invio reply prec",rr.getSource_addr());
             BtUtil.inviaRREP(routeRep, rr.getLast_sender());
         }
         //siamo noi la destinaione
@@ -169,7 +176,7 @@ public class AODV {
             Percorso p = new Percorso(rr.getDest_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getDest_sequence_number());
             Percorso  seEsiste = myDev.getPercorso(rr.getDest_addr());
             if(seEsiste!=null) {
-                int sn = seEsiste.getSequenceNumber();
+                long sn = seEsiste.getSequenceNumber();
                 if (sn < p.getSequenceNumber()) {
                     myDev.aggiungiPercorso(p);
                 }
@@ -206,13 +213,41 @@ public class AODV {
         private void rilanciaMess(Messaggio mess) {
             String dest = mess.getDest().getMACAddress();
             Percorso p = myDev.getPercorso(dest);
+            boolean connessioneOk=false;
             if(p!=null) {
-                BtUtil.inviaMess(mess, p.getNextHop());//manda al nodo successivo
+                Messaggio m = new Messaggio(mess.getMex(),mess.getDest(),myDev.getMACAddress(),mess.getSource());
+                BtUtil.inviaMess(m, p.getNextHop());//manda al nodo successivo
                 Log.d("invio al nodo succ", dest);
+                connessioneOk = BtUtil.checkSocket(p.getNextHop());
             }
             else {
+                RouteError re = new RouteError(mess.getSource(),mess.getDest().getMACAddress());
+                BtUtil.inviaError(re,mess.getLastSender());
                 Log.d("Non esite il percorso", dest);
             }
+            if(!connessioneOk) {
+                RouteError re = new RouteError(mess.getSource(),mess.getDest().getMACAddress());
+                BtUtil.inviaError(re,mess.getLastSender());
+                Log.d("Non esite il percorso", dest);
+            }
+        }
+    }
+
+    private class HandlerError extends Thread {
+        public void run() {
+            while (true) {
+                RouteError re = BtUtil.riceviError();
+                myDev.rimuoviPercorso(re.getDest()); //rimuovo il percorso verso la destinazione
+                if(!re.getSource().equals(myDev.getMACAddress())) //se non siamo noi source
+                    rilanciaErrore(re);
+                else {
+                    BtUtil.mostraMess("ERRORE! Il percorso non è più disponibile");
+                }
+            }
+        }
+
+        private void rilanciaErrore(RouteError re) {
+            BtUtil.inviaError(re,myDev.getPercorso(re.getSource()).getNextHop());
         }
     }
 

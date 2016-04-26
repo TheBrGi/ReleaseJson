@@ -2,8 +2,6 @@ package com.prog.tlc.btexchange.protocollo;
 
 import com.prog.tlc.btexchange.gestioneDispositivo.*;
 import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
-
-import java.sql.Time;
 import java.util.List;
 
 /**
@@ -34,13 +32,15 @@ public class GestoreVicini extends Thread {
         while (true) {
             vicini = BtUtil.cercaVicini();
             NeighborGreeting ng = new NeighborGreeting(myDisp.getMACAddress(), myDisp.getListaNodi());
-            for (Node vicino : vicini) {
-                BtUtil.inviaGreeting(ng, vicino.getMACAddress());
-            }
-            try {
-                this.sleep(ATTESA);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            for(int i=0; i<3; i++) {
+                for (Node vicino : vicini) {
+                    BtUtil.inviaGreeting(ng, vicino.getMACAddress());
+                }
+                try {
+                    this.sleep(ATTESA);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

@@ -1,6 +1,5 @@
 package com.prog.tlc.btexchange.gestione_bluetooth;
 
-import android.app.DownloadManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
@@ -17,13 +16,12 @@ import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
 import com.prog.tlc.btexchange.protocollo.Messaggio;
 import com.prog.tlc.btexchange.protocollo.NeighborGreeting;
+import com.prog.tlc.btexchange.protocollo.RouteError;
 import com.prog.tlc.btexchange.protocollo.RouteReply;
 import com.prog.tlc.btexchange.protocollo.RouteRequest;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA_DISCOVERY = 6000;
+    private final static long ATTESA_DISCOVERY = 4000;
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -49,6 +47,7 @@ public class BtUtil {
     private static ConcurrentLinkedQueue<RouteReply> rreps = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<NeighborGreeting> greetings = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<Messaggio> messages = new ConcurrentLinkedQueue<>();
+    private static ConcurrentLinkedQueue<RouteError> errors = new ConcurrentLinkedQueue<>();
 
     private static BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -189,6 +188,26 @@ public class BtUtil {
         mandaMessaggio(dest,m);
     }
 
+    public static void inviaError(RouteError re, String MAC) {
+        BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
+        mandaMessaggio(dest,re);
+    }
+
+    public static RouteError riceviError() {
+        while (true) {
+            if (!errors.isEmpty()) {
+                RouteError re = errors.poll();
+                Log.d("RiceviErrore","RRR");
+                return re;
+            }
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public static RouteRequest riceviRichiesta() {
         while (true) {
             if (!rreqs.isEmpty()) {
@@ -299,6 +318,12 @@ public class BtUtil {
 
     }
 
+    public static boolean checkSocket(String nextHop) {
+        if(sockets.containsKey(nextHop))
+            return sockets.get(nextHop).isConnected();
+        return false;
+    }
+
     private static class ConnectThread extends Thread {
 
         private final BluetoothSocket mmSocket;
@@ -387,6 +412,9 @@ public class BtUtil {
                     }
                     else if(ric instanceof Messaggio) {
                         messages.add((Messaggio) ric);
+                    }
+                    else if(ric instanceof RouteError) {
+                        errors.add((RouteError) ric);
                     }
 
                 } catch (IOException e) {
