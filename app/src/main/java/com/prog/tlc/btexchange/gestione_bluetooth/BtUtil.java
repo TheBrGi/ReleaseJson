@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
+
 import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
 import com.prog.tlc.btexchange.protocollo.Messaggio;
@@ -19,10 +20,15 @@ import com.prog.tlc.btexchange.protocollo.NeighborGreeting;
 import com.prog.tlc.btexchange.protocollo.RouteError;
 import com.prog.tlc.btexchange.protocollo.RouteReply;
 import com.prog.tlc.btexchange.protocollo.RouteRequest;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -104,26 +110,48 @@ public class BtUtil {
     private BtUtil() {
     }
 
-    public static void setActivity(MainActivity activity) {
-        mainActivity=activity;
+    public static void appendLog(String text) {
+        File logFile = new File("sdcard/Btlog.txt");
+        if (!logFile.exists()) {
+            try {
+                logFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            //BufferedWriter for performance, true to set append to file flag
+            String now=Calendar.getInstance().getTime().toString();
+            String completa="time: "+now+", event: "+text;
+            BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
+            buf.append(completa);
+            buf.newLine();
+            buf.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public static void accendiBt(){
+    public static void setActivity(MainActivity activity) {
+        mainActivity = activity;
+    }
+
+    public static void accendiBt() {
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0);
         mainActivity.startActivityForResult(discoverableIntent, 1);
     }
 
     public static void startServer() {
-        acceptThread=new AcceptThread();
+        acceptThread = new AcceptThread();
         acceptThread.start();
-        Log.d(tag,"start AcceptThread");
+        Log.d(tag, "start AcceptThread");
     }
 
     public static void stopServer() {
         acceptThread.cancel();
         acceptThread.interrupt();
-        Log.d(tag,"stop AcceptThread");
+        Log.d(tag, "stop AcceptThread");
     }
 
     public static boolean isInterrupted() {
@@ -147,57 +175,57 @@ public class BtUtil {
     }
 
     public static ArrayList<Node> cercaVicini() {
-        Log.d(tag,"chiamata cerca vicini");
+        Log.d(tag, "chiamata cerca vicini");
         deviceVisibili.clear();
         btAdapter.startDiscovery();
-        Log.d(tag,"discovery started");
+        Log.d(tag, "discovery started");
         try {
             Thread.sleep(ATTESA_DISCOVERY);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         btAdapter.cancelDiscovery();
-        Log.d(tag,"discovery canceled");
-        Log.d("lista devices",deviceVisibili.toString());
-        ArrayList<Node> list=new ArrayList<>();
-        for(BluetoothDevice bd: deviceVisibili) {
-            Node n = new Node(bd.getName(),bd.getAddress());
+        Log.d(tag, "discovery canceled");
+        Log.d("lista devices", deviceVisibili.toString());
+        ArrayList<Node> list = new ArrayList<>();
+        for (BluetoothDevice bd : deviceVisibili) {
+            Node n = new Node(bd.getName(), bd.getAddress());
             list.add(n);
         }
-        Log.d("lista",list.toString());
+        Log.d("lista", list.toString());
         return list;
     }
 
     public static void inviaGreeting(NeighborGreeting greet, String MAC) {
         BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
-        mandaMessaggio(dest,greet);
+        mandaMessaggio(dest, greet);
     }
 
     public static void inviaRREQ(RouteRequest rr, String MAC) {
         BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
-        mandaMessaggio(dest,rr);
+        mandaMessaggio(dest, rr);
     }
 
     public static void inviaRREP(RouteReply rr, String MAC) {
         BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
-        mandaMessaggio(dest,rr);
+        mandaMessaggio(dest, rr);
     }
 
     public static void inviaMess(Messaggio m, String MAC) {
         BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
-        mandaMessaggio(dest,m);
+        mandaMessaggio(dest, m);
     }
 
     public static void inviaError(RouteError re, String MAC) {
         BluetoothDevice dest = btAdapter.getRemoteDevice(MAC);
-        mandaMessaggio(dest,re);
+        mandaMessaggio(dest, re);
     }
 
     public static RouteError riceviError() {
         while (true) {
             if (!errors.isEmpty()) {
                 RouteError re = errors.poll();
-                Log.d("RiceviErrore","RRR");
+                Log.d("RiceviErrore", "RRR");
                 return re;
             }
             try {
@@ -212,7 +240,7 @@ public class BtUtil {
         while (true) {
             if (!rreqs.isEmpty()) {
                 RouteRequest rr = rreqs.poll();
-                Log.d("RiceviRichiesta",rr.getSource_addr());
+                Log.d("RiceviRichiesta", rr.getSource_addr());
                 return rr;
             }
             try {
@@ -291,7 +319,7 @@ public class BtUtil {
     public static void unregisterReceiver() {
         try {
             mainActivity.unregisterReceiver(receiver);
-        }catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             e.printStackTrace();
         }
     }
@@ -311,7 +339,7 @@ public class BtUtil {
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Toast t=Toast.makeText(getContext(),mex,Toast.LENGTH_SHORT);
+                Toast t = Toast.makeText(getContext(), mex, Toast.LENGTH_SHORT);
                 t.show();
             }
         });
@@ -319,7 +347,7 @@ public class BtUtil {
     }
 
     public static boolean checkSocket(String nextHop) {
-        if(sockets.containsKey(nextHop))
+        if (sockets.containsKey(nextHop))
             return sockets.get(nextHop).isConnected();
         return false;
     }
@@ -397,23 +425,19 @@ public class BtUtil {
             while (true) {
                 try {
                     // Read from the InputStream
-                    ObjectInputStream ois=new ObjectInputStream(mmSocket.getInputStream());
+                    ObjectInputStream ois = new ObjectInputStream(mmSocket.getInputStream());
                     Object ric = ois.readObject();
-                    if(ric instanceof NeighborGreeting) {
+                    if (ric instanceof NeighborGreeting) {
                         greetings.add((NeighborGreeting) ric);
-                    }
-                    else if(ric instanceof RouteReply) {
+                    } else if (ric instanceof RouteReply) {
                         rreps.add((RouteReply) ric);
-                    }
-                    else if(ric instanceof RouteRequest) {
-                        RouteRequest rr=(RouteRequest)ric;
-                        Log.d("ConnectedThread",rr.getSource_addr());
+                    } else if (ric instanceof RouteRequest) {
+                        RouteRequest rr = (RouteRequest) ric;
+                        Log.d("ConnectedThread", rr.getSource_addr());
                         rreqs.add((RouteRequest) ric);
-                    }
-                    else if(ric instanceof Messaggio) {
+                    } else if (ric instanceof Messaggio) {
                         messages.add((Messaggio) ric);
-                    }
-                    else if(ric instanceof RouteError) {
+                    } else if (ric instanceof RouteError) {
                         errors.add((RouteError) ric);
                     }
 
@@ -431,10 +455,10 @@ public class BtUtil {
         public void write(Object obj) {
             try {
                 //mmOutStream.write(bytes);
-                ObjectOutputStream oos=new ObjectOutputStream(mmSocket.getOutputStream());
+                ObjectOutputStream oos = new ObjectOutputStream(mmSocket.getOutputStream());
                 oos.writeObject(obj);
-                String nomeClasse=obj.getClass().getSimpleName();
-                Log.d("write: ",nomeClasse);
+                String nomeClasse = obj.getClass().getSimpleName();
+                Log.d("write: ", nomeClasse);
                 oos.flush();
             } catch (IOException e) {
                 Log.d(tag, "invio fallito");
