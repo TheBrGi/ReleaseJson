@@ -51,7 +51,7 @@ public class Dispositivo {
     }
 
     public void incrementaSeqNum() {
-        sequenceNumber = Calendar.getInstance().getTimeInMillis(); ;
+        sequenceNumber = Calendar.getInstance().getTimeInMillis();
     }
 
     public void aggiungiNodo(Node n) {
