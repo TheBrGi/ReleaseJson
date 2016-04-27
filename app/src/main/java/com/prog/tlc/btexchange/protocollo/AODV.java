@@ -61,12 +61,13 @@ public class AODV {
         }
         if(p==null) {
             BtUtil.mostraMess("NON si è trovato nessun percorso!");
+            //BtUtil.appendLog("NON si è trovato nessun percorso verso"+MACdestinazione);
         }
         else {
             Log.d("percorso trovato","42");
             Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione),myDev.getMACAddress(),myDev.getMACAddress());
             Log.d("invio il mex","5143");
-            BtUtil.appendLog("invio il messaggio a "+nomeDest);
+            //BtUtil.appendLog("invio il messaggio a "+nomeDest);
             //mando al next hop fino a dest (eseguito dopo che rep e reply hanno fissato il path)
             BtUtil.inviaMess(m,p.getNextHop());
             connessioneOk = BtUtil.checkSocket(p.getNextHop());
@@ -75,7 +76,7 @@ public class AODV {
             myDev.rimuoviPercorso(MACdestinazione);
             String daMostrare = "ERRORE! Il percorso verso "+MACdestinazione+" non è più disponibile ";
             BtUtil.mostraMess(daMostrare);
-            BtUtil.appendLog(daMostrare);
+            //BtUtil.appendLog(daMostrare);
         }
     }
 

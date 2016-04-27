@@ -298,6 +298,19 @@ public class BtUtil {
         /*if (btAdapter.isDiscovering()) {
             btAdapter.cancelDiscovery();
         }*/
+        Calendar now=null;
+        if (obj instanceof NeighborGreeting) {
+            BtUtil.appendLog("time: "+now.getTime()+" inviato greeting a "+selectedDevice.getAddress());
+        } else if (obj instanceof RouteReply) {
+            BtUtil.appendLog("time: "+now.getTime()+" inviato Route Reply a "+selectedDevice.getAddress());
+        } else if (obj instanceof RouteRequest) {
+            BtUtil.appendLog("time: "+now.getTime()+" inviato Route Request a "+selectedDevice.getAddress());
+        } else if (obj instanceof Messaggio) {
+            BtUtil.appendLog("time: "+now.getTime()+" inviato messaggio a "+selectedDevice.getAddress());
+        } else if (obj instanceof RouteError) {
+            BtUtil.appendLog("time: "+now.getTime()+" inviato Route Error a "+selectedDevice.getAddress());
+        }
+
         if (sockets.containsKey(selectedDevice.getAddress())) {
             BluetoothSocket k = sockets.get(selectedDevice.getAddress());
             if (k.isConnected()) {
@@ -427,18 +440,26 @@ public class BtUtil {
                     // Read from the InputStream
                     ObjectInputStream ois = new ObjectInputStream(mmSocket.getInputStream());
                     Object ric = ois.readObject();
+                    String mittente=mmSocket.getRemoteDevice().getAddress();
+                    String now=Calendar.getInstance().getTime().toString();
+
                     if (ric instanceof NeighborGreeting) {
                         greetings.add((NeighborGreeting) ric);
+                        BtUtil.appendLog("time: "+now+" ricevuto Neighbor Greeting da "+mittente);
                     } else if (ric instanceof RouteReply) {
                         rreps.add((RouteReply) ric);
+                        BtUtil.appendLog("time: "+now+" ricevuto Route Reply da "+mittente);
                     } else if (ric instanceof RouteRequest) {
                         RouteRequest rr = (RouteRequest) ric;
                         Log.d("ConnectedThread", rr.getSource_addr());
                         rreqs.add((RouteRequest) ric);
+                        BtUtil.appendLog("time: "+now+" ricevuto Route Request da "+mittente);
                     } else if (ric instanceof Messaggio) {
                         messages.add((Messaggio) ric);
+                        BtUtil.appendLog("time: "+now+" ricevuto Messaggio da "+mittente);
                     } else if (ric instanceof RouteError) {
                         errors.add((RouteError) ric);
+                        BtUtil.appendLog("time: "+now+" ricevuto Route Error da "+mittente);
                     }
 
                 } catch (IOException e) {
