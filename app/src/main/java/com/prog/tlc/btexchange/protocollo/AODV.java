@@ -37,9 +37,9 @@ public class AODV {
         }
         myDev.incrementaSeqNum();
         //ora ci mettiamo in attesa della repljhy
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 10; i++) {
             try {
-                Thread.sleep(2000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

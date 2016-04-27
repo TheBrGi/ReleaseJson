@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA_DISCOVERY = 4000;
+    private final static long ATTESA_DISCOVERY = 4000;//tempo necessario dal bt a vedere dispositivo
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -121,8 +121,8 @@ public class BtUtil {
         }
         try {
             //BufferedWriter for performance, true to set append to file flag
-            String now=Calendar.getInstance().getTime().toString();
-            String completa="time: "+now+", event: "+text;
+            String now = Calendar.getInstance().getTime().toString();
+            String completa = "time: " + now + ", event: " + text;
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
             buf.append(completa);
             buf.newLine();
@@ -482,10 +482,12 @@ public class BtUtil {
             // Use a temporary object that is later assigned to mmServerSocket,
             // because mmServerSocket is final
             BluetoothServerSocket tmp = null;
-            try {
-                // MY_UUID is the app's UUID string, also used by the client code
-                tmp = btAdapter.listenUsingInsecureRfcommWithServiceRecord("app", MY_UUID);
-            } catch (IOException e) {
+            while (tmp == null) {
+                try {
+                    // MY_UUID is the app's UUID string, also used by the client code
+                    tmp = btAdapter.listenUsingInsecureRfcommWithServiceRecord("app", MY_UUID);
+                } catch (IOException e) {
+                }
             }
             mmServerSocket = tmp;
         }

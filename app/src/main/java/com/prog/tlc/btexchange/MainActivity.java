@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private AODV protocollo;
     private Dispositivo mioDispositivo;
-    private final long TEMPO_INVIO_GREET = 3000;
+    private final long TEMPO_INVIO_GREET = 2000;
     private boolean sending = false;
     ArrayList<Node> vicini;
 
