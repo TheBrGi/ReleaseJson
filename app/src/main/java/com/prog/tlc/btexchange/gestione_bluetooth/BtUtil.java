@@ -131,7 +131,27 @@ public class BtUtil {
             e.printStackTrace();
         }
     }
-
+    public static void appendLogGreet(String text) {
+        File logFile = new File("sdcard/BtGreetlog.txt");
+        if (!logFile.exists()) {
+            try {
+                logFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            //BufferedWriter for performance, true to set append to file flag
+            String now = Calendar.getInstance().getTime().toString();
+            String completa = "time: " + now + ", event: " + text;
+            BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
+            buf.append(completa);
+            buf.newLine();
+            buf.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     public static void setActivity(MainActivity activity) {
         mainActivity = activity;
     }
@@ -298,17 +318,17 @@ public class BtUtil {
         /*if (btAdapter.isDiscovering()) {
             btAdapter.cancelDiscovery();
         }*/
-        Calendar now=null;
+
         if (obj instanceof NeighborGreeting) {
-            BtUtil.appendLog("time: "+now.getTime()+" inviato greeting a "+selectedDevice.getAddress());
+            BtUtil.appendLogGreet(" inviato greeting a "+selectedDevice.getAddress());
         } else if (obj instanceof RouteReply) {
-            BtUtil.appendLog("time: "+now.getTime()+" inviato Route Reply a "+selectedDevice.getAddress());
+            BtUtil.appendLog(" inviato Route Reply a "+selectedDevice.getAddress());
         } else if (obj instanceof RouteRequest) {
-            BtUtil.appendLog("time: "+now.getTime()+" inviato Route Request a "+selectedDevice.getAddress());
+            BtUtil.appendLog(" inviato Route Request a "+selectedDevice.getAddress());
         } else if (obj instanceof Messaggio) {
-            BtUtil.appendLog("time: "+now.getTime()+" inviato messaggio a "+selectedDevice.getAddress());
+            BtUtil.appendLog(" inviato messaggio a "+selectedDevice.getAddress());
         } else if (obj instanceof RouteError) {
-            BtUtil.appendLog("time: "+now.getTime()+" inviato Route Error a "+selectedDevice.getAddress());
+            BtUtil.appendLog(" inviato Route Error a "+selectedDevice.getAddress());
         }
 
         if (sockets.containsKey(selectedDevice.getAddress())) {
@@ -441,25 +461,23 @@ public class BtUtil {
                     ObjectInputStream ois = new ObjectInputStream(mmSocket.getInputStream());
                     Object ric = ois.readObject();
                     String mittente=mmSocket.getRemoteDevice().getAddress();
-                    String now=Calendar.getInstance().getTime().toString();
-
                     if (ric instanceof NeighborGreeting) {
                         greetings.add((NeighborGreeting) ric);
-                        BtUtil.appendLog("time: "+now+" ricevuto Neighbor Greeting da "+mittente);
+                        BtUtil.appendLogGreet(" ricevuto Neighbor Greeting da "+mittente);
                     } else if (ric instanceof RouteReply) {
                         rreps.add((RouteReply) ric);
-                        BtUtil.appendLog("time: "+now+" ricevuto Route Reply da "+mittente);
+                        BtUtil.appendLog(" ricevuto Route Reply da "+mittente);
                     } else if (ric instanceof RouteRequest) {
                         RouteRequest rr = (RouteRequest) ric;
                         Log.d("ConnectedThread", rr.getSource_addr());
                         rreqs.add((RouteRequest) ric);
-                        BtUtil.appendLog("time: "+now+" ricevuto Route Request da "+mittente);
+                        BtUtil.appendLog(" ricevuto Route Request da "+mittente);
                     } else if (ric instanceof Messaggio) {
                         messages.add((Messaggio) ric);
-                        BtUtil.appendLog("time: "+now+" ricevuto Messaggio da "+mittente);
+                        BtUtil.appendLog(" ricevuto Messaggio da "+mittente);
                     } else if (ric instanceof RouteError) {
                         errors.add((RouteError) ric);
-                        BtUtil.appendLog("time: "+now+" ricevuto Route Error da "+mittente);
+                        BtUtil.appendLog(" ricevuto Route Error da "+mittente);
                     }
 
                 } catch (IOException e) {
