@@ -115,6 +115,9 @@ public class BtUtil {
         if (!logFile.exists()) {
             try {
                 logFile.createNewFile();
+                BufferedWriter buff = new BufferedWriter(new FileWriter(logFile, true));
+                buff.append("                     TIME                                EVENT\n");
+                buff.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -122,7 +125,7 @@ public class BtUtil {
         try {
             //BufferedWriter for performance, true to set append to file flag
             String now = Calendar.getInstance().getTime().toString();
-            String completa = "time: " + now + ", event: " + text;
+            String completa = now + " --- " + text;
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
             buf.append(completa);
             buf.newLine();
@@ -136,14 +139,16 @@ public class BtUtil {
         if (!logFile.exists()) {
             try {
                 logFile.createNewFile();
+                BufferedWriter buff = new BufferedWriter(new FileWriter(logFile, true));
+                buff.append("                     TIME                                EVENT\n");
+                buff.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         try {
-            //BufferedWriter for performance, true to set append to file flag
             String now = Calendar.getInstance().getTime().toString();
-            String completa = "time: " + now + ", event: " + text;
+            String completa = now + " --- " + text;
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
             buf.append(completa);
             buf.newLine();
