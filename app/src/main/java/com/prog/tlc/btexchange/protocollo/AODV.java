@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.prog.tlc.btexchange.gestioneDispositivo.*;
 import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
+import com.prog.tlc.btexchange.gestione_bluetooth.Contatore;
 
 import java.util.List;
 
@@ -30,11 +31,12 @@ public class AODV {
         int destSeqNumber = 0, hopCount = 0;                                                                            //poi conterrà il last sender
         RouteRequest req = new RouteRequest(myDev.getMACAddress(), myDev.getSequenceNumber(), dest, destSeqNumber, hopCount, myDev.getMACAddress());
         Log.d("MACaddr", myDev.getMACAddress());
-        Log.d("req sour addr:",req.getSource_addr());
+        Log.d("req sour addr:", req.getSource_addr());
         List<Node> vicini = gestoreVicini.getVicini();
         for (Node vicino : vicini) {
             BtUtil.inviaRREQ(req, vicino.getMACAddress());
         }
+
         myDev.incrementaSeqNum();
         //ora ci mettiamo in attesa della repljhy
         for (int i = 0; i < 10; i++) {
@@ -50,31 +52,29 @@ public class AODV {
     }
 
     public void inviaMessaggio(String MACdestinazione, String contenuto, String nomeDest) {
-        Percorso p=null;
-        boolean connessioneOk=false;
-        if(!myDev.esistePercorso(MACdestinazione)) {
+        Percorso p = null;
+        boolean connessioneOk = false;
+        if (!myDev.esistePercorso(MACdestinazione)) {
             Log.d("ricerco il percorso per", nomeDest);
             p = cercaPercorso(MACdestinazione);
+        } else {
+            p = myDev.getPercorso(MACdestinazione);
         }
-        else{
-            p=myDev.getPercorso(MACdestinazione);
-        }
-        if(p==null) {
+        if (p == null) {
             BtUtil.mostraMess("NON si è trovato nessun percorso!");
             //BtUtil.appendLog("NON si è trovato nessun percorso verso"+MACdestinazione);
-        }
-        else {
-            Log.d("percorso trovato","42");
-            Messaggio m = new Messaggio(contenuto,new Node(nomeDest,MACdestinazione),myDev.getMACAddress(),myDev.getMACAddress());
-            Log.d("invio il mex","5143");
+        } else {
+            Log.d("percorso trovato", "42");
+            Messaggio m = new Messaggio(contenuto, new Node(nomeDest, MACdestinazione), myDev.getMACAddress(), myDev.getMACAddress());
+            Log.d("invio il mex", "5143");
             //BtUtil.appendLog("invio il messaggio a "+nomeDest);
             //mando al next hop fino a dest (eseguito dopo che rep e reply hanno fissato il path)
-            BtUtil.inviaMess(m,p.getNextHop());
+            BtUtil.inviaMess(m, p.getNextHop());
             connessioneOk = BtUtil.checkSocket(p.getNextHop());
         }
-        if(!connessioneOk) {
+        if (!connessioneOk) {
             myDev.rimuoviPercorso(MACdestinazione);
-            String daMostrare = "ERRORE! Il percorso verso "+MACdestinazione+" non è più disponibile ";
+            String daMostrare = "ERRORE! Il percorso verso " + MACdestinazione + " non è più disponibile ";
             BtUtil.mostraMess(daMostrare);
             //BtUtil.appendLog(daMostrare);
         }
@@ -84,9 +84,9 @@ public class AODV {
         public void run() {
             while (true) {
                 RouteRequest rr = BtUtil.riceviRichiesta();
-                String s = "ricevuto REQ da "+rr.getLast_sender();
+                String s = "ricevuto REQ da " + rr.getLast_sender();
                 BtUtil.mostraMess(s);
-                Log.d("rreq ricevuta isNull?:",rr.getSource_addr());
+                Log.d("rreq ricevuta isNull?:", rr.getSource_addr());
                 //flooding controllato
                 if (!myDev.getRREQRicevuti().containsKey(rr.getSource_addr())) {
                     gestisciRREQ(rr);
@@ -102,8 +102,8 @@ public class AODV {
         }
 
         private void gestisciRREQ(RouteRequest rr) {
-            Log.d("BtExc in gestisciRREQ","noi dest?"+String.valueOf(myDev.getMACAddress().equals(rr.getDest_addr())));
-            Log.d("BtExc rreq dest addr",rr.getDest_addr());
+            Log.d("BtExc in gestisciRREQ", "noi dest?" + String.valueOf(myDev.getMACAddress().equals(rr.getDest_addr())));
+            Log.d("BtExc rreq dest addr", rr.getDest_addr());
             estrapolaPercorsoRREQ(rr);
             if (myDev.getMACAddress().equals(rr.getDest_addr()))  //se siamo noi la destinazione
                 reply(rr);
@@ -114,17 +114,16 @@ public class AODV {
         }
 
         private void estrapolaPercorsoRREQ(RouteRequest rr) {
-            Log.d("BtExc","estrapolaPercorsoRREQ");
-                                     //dest, next hop, hop count, seq number
+            Log.d("BtExc", "estrapolaPercorsoRREQ");
+            //dest, next hop, hop count, seq number
             Percorso p = new Percorso(rr.getSource_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getSource_sequence_number());
-            Percorso  seEsiste = myDev.getPercorso(rr.getSource_addr());
-            if(seEsiste!=null) {
+            Percorso seEsiste = myDev.getPercorso(rr.getSource_addr());
+            if (seEsiste != null) {
                 long sn = seEsiste.getSequenceNumber();
                 if (sn < p.getSequenceNumber()) {
                     myDev.aggiungiPercorso(p);
                 }
-            }
-            else
+            } else
                 myDev.aggiungiPercorso(p);
         }
 
@@ -140,20 +139,22 @@ public class AODV {
                 }
             }
         }
+
         //conosco un percorso verso dest
         private void reply(RouteRequest rr, Percorso p) { //il source sarà sempre tale sia in un verso che nell'altro
             long seqDest = p.getSequenceNumber();
             int numHopDaQuiADest = p.getNumeroHop();
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), seqDest, numHopDaQuiADest, myDev.getMACAddress());
             myDev.incrementaSeqNum();
-            Log.d("invio reply prec",rr.getSource_addr());
+            Log.d("invio reply prec", rr.getSource_addr());
             BtUtil.inviaRREP(routeRep, rr.getLast_sender());
         }
+
         //siamo noi la destinaione
         private void reply(RouteRequest rr) { //l'hop count è sicuramente 1 in questo momento, poi (probabilmente) verrà incrementato
             RouteReply routeRep = new RouteReply(rr.getSource_addr(), rr.getDest_addr(), myDev.getSequenceNumber(), 1, myDev.getMACAddress());
             myDev.incrementaSeqNum();
-            Log.d("invio reply dest",rr.getSource_addr());
+            Log.d("invio reply dest", rr.getSource_addr());
             BtUtil.inviaRREP(routeRep, rr.getLast_sender());
         }
     }
@@ -163,7 +164,7 @@ public class AODV {
         public void run() {
             while (true) {
                 RouteReply rr = BtUtil.riceviRisposta();
-                String s = "ricevuto REPLY da "+rr.getLast_sender();
+                String s = "ricevuto REPLY da " + rr.getLast_sender();
                 BtUtil.mostraMess(s);
                 estrapolaPercorsoRREP(rr);
                 if (!rr.getSource_addr().equals(myDev.getMACAddress())) { //non siamo noi la sorgente, quindi ripropaghiamo per arrivare ad essa
@@ -177,21 +178,20 @@ public class AODV {
 
         private void estrapolaPercorsoRREP(RouteReply rr) { //il source sarà sempre tale sia in un verso che nell'altro
             Percorso p = new Percorso(rr.getDest_addr(), rr.getLast_sender(), rr.getHop_cnt(), rr.getDest_sequence_number());
-            Percorso  seEsiste = myDev.getPercorso(rr.getDest_addr());
-            if(seEsiste!=null) {
+            Percorso seEsiste = myDev.getPercorso(rr.getDest_addr());
+            if (seEsiste != null) {
                 long sn = seEsiste.getSequenceNumber();
                 if (sn < p.getSequenceNumber()) {
                     myDev.aggiungiPercorso(p);
                 }
-            }
-            else
+            } else
                 myDev.aggiungiPercorso(p);
         }
 
         private void rilanciaReply(RouteReply rr) {
             String MACNextHop = myDev.getPercorso(rr.getSource_addr()).getNextHop();
             myDev.incrementaSeqNum();
-            Log.d("rilancia reply verso",MACNextHop);
+            Log.d("rilancia reply verso", MACNextHop);
             BtUtil.inviaRREP(rr, MACNextHop);
         }
     }
@@ -200,13 +200,12 @@ public class AODV {
         public void run() {
             while (true) {
                 Messaggio mess = BtUtil.riceviMessaggio();
-                String s = "ricevuto messaggio per "+mess.getDest();
+                String s = "ricevuto messaggio per " + mess.getDest();
                 BtUtil.mostraMess(s);
-                if(mess.getDest().getMACAddress().equals(myDev.getMACAddress())) {
+                if (mess.getDest().getMACAddress().equals(myDev.getMACAddress())) {
                     BtUtil.mostraMess(mess.getMex());
-                    BtUtil.appendLog("ricevuto messaggio da "+mess.getSource());
-                }
-                else {
+                    BtUtil.appendLog("ricevuto messaggio da " + mess.getSource());
+                } else {
                     rilanciaMess(mess);
                 }
 
@@ -217,21 +216,20 @@ public class AODV {
         private void rilanciaMess(Messaggio mess) {
             String dest = mess.getDest().getMACAddress();
             Percorso p = myDev.getPercorso(dest);
-            boolean connessioneOk=false;
-            if(p!=null) {
-                Messaggio m = new Messaggio(mess.getMex(),mess.getDest(),myDev.getMACAddress(),mess.getSource());
+            boolean connessioneOk = false;
+            if (p != null) {
+                Messaggio m = new Messaggio(mess.getMex(), mess.getDest(), myDev.getMACAddress(), mess.getSource());
                 BtUtil.inviaMess(m, p.getNextHop());//manda al nodo successivo
                 Log.d("invio al nodo succ", dest);
                 connessioneOk = BtUtil.checkSocket(p.getNextHop());
-            }
-            else {
-                RouteError re = new RouteError(mess.getSource(),mess.getDest().getMACAddress());
-                BtUtil.inviaError(re,mess.getLastSender());
+            } else {
+                RouteError re = new RouteError(mess.getSource(), mess.getDest().getMACAddress());
+                BtUtil.inviaError(re, mess.getLastSender());
                 Log.d("Non esite il percorso", dest);
             }
-            if(!connessioneOk) {
-                RouteError re = new RouteError(mess.getSource(),mess.getDest().getMACAddress());
-                BtUtil.inviaError(re,mess.getLastSender());
+            if (!connessioneOk) {
+                RouteError re = new RouteError(mess.getSource(), mess.getDest().getMACAddress());
+                BtUtil.inviaError(re, mess.getLastSender());
                 Log.d("Non esite il percorso", dest);
             }
         }
@@ -242,7 +240,7 @@ public class AODV {
             while (true) {
                 RouteError re = BtUtil.riceviError();
                 myDev.rimuoviPercorso(re.getDest()); //rimuovo il percorso verso la destinazione
-                if(!re.getSource().equals(myDev.getMACAddress())) //se non siamo noi source
+                if (!re.getSource().equals(myDev.getMACAddress())) //se non siamo noi source
                     rilanciaErrore(re);
                 else {
                     BtUtil.mostraMess("ERRORE! Il percorso non è più disponibile");
@@ -251,7 +249,7 @@ public class AODV {
         }
 
         private void rilanciaErrore(RouteError re) {
-            BtUtil.inviaError(re,myDev.getPercorso(re.getSource()).getNextHop());
+            BtUtil.inviaError(re, myDev.getPercorso(re.getSource()).getNextHop());
         }
     }
 

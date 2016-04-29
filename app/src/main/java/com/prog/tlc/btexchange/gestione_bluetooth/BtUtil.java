@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Created by BrGi on 16/03/2016.
  */
+
+
 public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
@@ -54,6 +56,9 @@ public class BtUtil {
     private static ConcurrentLinkedQueue<NeighborGreeting> greetings = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<Messaggio> messages = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<RouteError> errors = new ConcurrentLinkedQueue<>();
+    private static Contatore contInvii=new Contatore();
+    private static Contatore contRicez=new Contatore();
+
 
     private static BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -110,13 +115,17 @@ public class BtUtil {
     private BtUtil() {
     }
 
+    static int countG=0;
+    static int countMess=0;
+
     public static void appendLog(String text) {
         File logFile = new File("sdcard/Btlog.txt");
+
         if (!logFile.exists()) {
             try {
                 logFile.createNewFile();
                 BufferedWriter buff = new BufferedWriter(new FileWriter(logFile, true));
-                buff.append("                     TIME                                EVENT\n");
+                buff.append("                     TIME                                    EVENT\n");
                 buff.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -125,7 +134,9 @@ public class BtUtil {
         try {
             //BufferedWriter for performance, true to set append to file flag
             String now = Calendar.getInstance().getTime().toString();
-            String completa = now + " --- " + text;
+            countMess++;
+            String completa = countMess+": "+now + " --- " + text;
+
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
             buf.append(completa);
             buf.newLine();
@@ -140,7 +151,7 @@ public class BtUtil {
             try {
                 logFile.createNewFile();
                 BufferedWriter buff = new BufferedWriter(new FileWriter(logFile, true));
-                buff.append("                     TIME                                EVENT\n");
+                buff.append("                     TIME                                    EVENT\n");
                 buff.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -148,7 +159,9 @@ public class BtUtil {
         }
         try {
             String now = Calendar.getInstance().getTime().toString();
-            String completa = now + " --- " + text;
+            countG++;
+            String completa = countG+": "+now + " --- " + text;
+
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
             buf.append(completa);
             buf.newLine();
@@ -325,15 +338,20 @@ public class BtUtil {
         }*/
 
         if (obj instanceof NeighborGreeting) {
-            BtUtil.appendLogGreet(" inviato greeting a "+selectedDevice.getAddress());
+            contInvii.incrNum_Greet();
+            BtUtil.appendLogGreet(" inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
         } else if (obj instanceof RouteReply) {
-            BtUtil.appendLog(" inviato Route Reply a "+selectedDevice.getAddress());
+            contInvii.getNum_RREP();
+            BtUtil.appendLog(" inviato Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress());
         } else if (obj instanceof RouteRequest) {
-            BtUtil.appendLog(" inviato Route Request a "+selectedDevice.getAddress());
+            contInvii.incrNum_RREQ();
+            BtUtil.appendLog(" inviato Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress());
         } else if (obj instanceof Messaggio) {
-            BtUtil.appendLog(" inviato messaggio a "+selectedDevice.getAddress());
+            contInvii.incrNum_Mess();
+            BtUtil.appendLog(" inviato messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress());
         } else if (obj instanceof RouteError) {
-            BtUtil.appendLog(" inviato Route Error a "+selectedDevice.getAddress());
+            contInvii.incrNum_RERR();
+            BtUtil.appendLog(" inviato Route Error a " + "n. " + contInvii.getNum_RERR() + " a " + selectedDevice.getAddress());
         }
 
         if (sockets.containsKey(selectedDevice.getAddress())) {
@@ -467,22 +485,27 @@ public class BtUtil {
                     Object ric = ois.readObject();
                     String mittente=mmSocket.getRemoteDevice().getAddress();
                     if (ric instanceof NeighborGreeting) {
+                        contRicez.incrNum_Greet();
                         greetings.add((NeighborGreeting) ric);
-                        BtUtil.appendLogGreet(" ricevuto Neighbor Greeting da "+mittente);
+                        BtUtil.appendLogGreet(" ricevuto Neighbor Greeting n. "+contRicez.getNum_Greet() +"da "+mittente);
                     } else if (ric instanceof RouteReply) {
+                        contRicez.incrNum_RREP();
                         rreps.add((RouteReply) ric);
-                        BtUtil.appendLog(" ricevuto Route Reply da "+mittente);
+                        BtUtil.appendLog(" ricevuto Route Reply n. "+contRicez.getNum_RREP() +"da "+mittente);
                     } else if (ric instanceof RouteRequest) {
                         RouteRequest rr = (RouteRequest) ric;
                         Log.d("ConnectedThread", rr.getSource_addr());
+                        contRicez.incrNum_RREQ();
                         rreqs.add((RouteRequest) ric);
-                        BtUtil.appendLog(" ricevuto Route Request da "+mittente);
+                        BtUtil.appendLog(" ricevuto Route Request n. "+contRicez.getNum_RREQ() +"da "+mittente);
                     } else if (ric instanceof Messaggio) {
+                        contRicez.incrNum_Mess();
                         messages.add((Messaggio) ric);
-                        BtUtil.appendLog(" ricevuto Messaggio da "+mittente);
+                        BtUtil.appendLog(" ricevuto Messaggio n. "+contRicez.getNum_Mess() +"da "+mittente);
                     } else if (ric instanceof RouteError) {
+                        contRicez.incrNum_RERR();
                         errors.add((RouteError) ric);
-                        BtUtil.appendLog(" ricevuto Route Error da "+mittente);
+                        BtUtil.appendLog(" ricevuto Route Error n. "+contRicez.getNum_RERR() +"da "+mittente);
                     }
 
                 } catch (IOException e) {

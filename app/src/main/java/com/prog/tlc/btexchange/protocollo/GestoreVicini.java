@@ -2,6 +2,8 @@ package com.prog.tlc.btexchange.protocollo;
 
 import com.prog.tlc.btexchange.gestioneDispositivo.*;
 import com.prog.tlc.btexchange.gestione_bluetooth.BtUtil;
+import com.prog.tlc.btexchange.gestione_bluetooth.Contatore;
+
 import java.util.List;
 
 /**
@@ -17,10 +19,11 @@ public class GestoreVicini extends Thread {
     private final long ATTESA;
     private List<Node> vicini;
 
-
     public GestoreVicini(Dispositivo d, long tempoAttesa) {
+
         myDisp = d;
         ATTESA = tempoAttesa;
+
         new Ascoltatore().start();
     }
 
@@ -35,6 +38,7 @@ public class GestoreVicini extends Thread {
             for(int i=0; i<3; i++) {
                 for (Node vicino : vicini) {
                     BtUtil.inviaGreeting(ng, vicino.getMACAddress());
+
                 }
                 try {
                     this.sleep(ATTESA);
