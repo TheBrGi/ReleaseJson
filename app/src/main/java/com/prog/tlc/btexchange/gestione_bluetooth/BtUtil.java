@@ -116,8 +116,8 @@ public class BtUtil {
     private BtUtil() {
     }
 
-    static int countG=0;
-    static int countMess=0;
+
+
 
     public static void appendLog(String text) {
         File logFile = new File("sdcard/Btlog.txt");
@@ -135,11 +135,10 @@ public class BtUtil {
         try {
             //BufferedWriter for performance, true to set append to file flag
             String now = Calendar.getInstance().getTime().toString();
-            countMess++;
-            String completa = countMess+": "+now + " --- " + text;
+
 
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
-            buf.append(completa);
+            buf.append(text);
             buf.newLine();
             buf.close();
         } catch (IOException e) {
@@ -160,11 +159,10 @@ public class BtUtil {
         }
         try {
             String now = Calendar.getInstance().getTime().toString();
-            countG++;
-            String completa = countG+": "+now + " --- " + text;
+
 
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
-            buf.append(completa);
+            buf.append(text);
             buf.newLine();
             buf.close();
         } catch (IOException e) {
@@ -341,7 +339,7 @@ public class BtUtil {
         String tempo = c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND)+":"+c.get(Calendar.MILLISECOND);
         if (obj instanceof NeighborGreeting) {
             contInvii.incrNum_Greet();
-            BtUtil.appendLogGreet( tempo+"inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
+            BtUtil.appendLogGreet( tempo+" inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
         } else if (obj instanceof RouteReply) {
             contInvii.getNum_RREP();
             BtUtil.appendLog(tempo+" inviato Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress()+" source: "+((RouteReply) obj).getSource_addr());
