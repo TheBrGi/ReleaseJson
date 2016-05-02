@@ -116,8 +116,8 @@ public class BtUtil {
     private BtUtil() {
     }
 
-    static int countG=0;
-    static int countMess=0;
+
+
 
     public static void appendLog(String text) {
         File logFile = new File("sdcard/Btlog.txt");
@@ -135,11 +135,10 @@ public class BtUtil {
         try {
             //BufferedWriter for performance, true to set append to file flag
             String now = Calendar.getInstance().getTime().toString();
-            countMess++;
-            String completa = countMess+": "+now + " --- " + text;
+
 
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
-            buf.append(completa);
+            buf.append(text);
             buf.newLine();
             buf.close();
         } catch (IOException e) {
@@ -160,11 +159,10 @@ public class BtUtil {
         }
         try {
             String now = Calendar.getInstance().getTime().toString();
-            countG++;
-            String completa = countG+": "+now + " --- " + text;
+
 
             BufferedWriter buf = new BufferedWriter(new FileWriter(logFile, true));
-            buf.append(completa);
+            buf.append(text);
             buf.newLine();
             buf.close();
         } catch (IOException e) {
