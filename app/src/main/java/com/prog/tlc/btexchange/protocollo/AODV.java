@@ -74,7 +74,7 @@ public class AODV {
         }
         if (!connessioneOk) {
             myDev.rimuoviPercorso(MACdestinazione);
-            String daMostrare = "ERRORE! Il percorso verso " + MACdestinazione + " non è più disponibile ";
+            String daMostrare = "ERRORE! Il percorso verso " + MACdestinazione + " non è disponibile ";
             BtUtil.mostraMess(daMostrare);
             //BtUtil.appendLog(daMostrare);
         }
