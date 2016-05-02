@@ -33,8 +33,10 @@ public class AODV {
         Log.d("MACaddr", myDev.getMACAddress());
         Log.d("req sour addr:", req.getSource_addr());
         List<Node> vicini = gestoreVicini.getVicini();
+        List<Node> conApp = myDev.getListaNodi();
         for (Node vicino : vicini) {
-            BtUtil.inviaRREQ(req, vicino.getMACAddress());
+            if(conApp.contains(vicino))
+                BtUtil.inviaRREQ(req, vicino.getMACAddress());
         }
 
         myDev.incrementaSeqNum();
