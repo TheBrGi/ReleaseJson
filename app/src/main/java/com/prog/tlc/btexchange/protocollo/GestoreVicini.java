@@ -23,7 +23,6 @@ public class GestoreVicini extends Thread {
 
         myDisp = d;
         ATTESA = tempoAttesa;
-
         new Ascoltatore().start();
     }
 
