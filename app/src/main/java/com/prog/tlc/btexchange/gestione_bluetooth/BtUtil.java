@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA_DISCOVERY = 4000;//tempo necessario dal bt a vedere dispositivo
+    private final static long ATTESA_DISCOVERY = 5000;//tempo necessario dal bt a vedere dispositivo
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -57,8 +57,8 @@ public class BtUtil {
     private static ConcurrentLinkedQueue<NeighborGreeting> greetings = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<Messaggio> messages = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<RouteError> errors = new ConcurrentLinkedQueue<>();
-    private static Contatore contInvii=new Contatore();
-    private static Contatore contRicez=new Contatore();
+    private static Contatore contInvii = new Contatore();
+    private static Contatore contRicez = new Contatore();
 
 
     private static BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -117,8 +117,6 @@ public class BtUtil {
     }
 
 
-
-
     public static void appendLog(String text) {
         File logFile = new File("sdcard/Btlog.txt");
 
@@ -143,6 +141,7 @@ public class BtUtil {
             e.printStackTrace();
         }
     }
+
     public static void appendLogGreet(String text) {
         File logFile = new File("sdcard/BtGreetlog.txt");
         if (!logFile.exists()) {
@@ -165,6 +164,7 @@ public class BtUtil {
             e.printStackTrace();
         }
     }
+
     public static void setActivity(MainActivity activity) {
         mainActivity = activity;
     }
@@ -462,38 +462,44 @@ public class BtUtil {
                     ObjectInputStream ois = new ObjectInputStream(mmSocket.getInputStream());
                     Object ric = ois.readObject();
                     Calendar c = Calendar.getInstance();
-                    String tempo = c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND)+":"+c.get(Calendar.MILLISECOND);
-                    String mittente=mmSocket.getRemoteDevice().getAddress();
+                    String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
+                    String mittente = mmSocket.getRemoteDevice().getAddress();
                     if (ric instanceof NeighborGreeting) {
                         contRicez.incrNum_Greet();
                         greetings.add((NeighborGreeting) ric);
-                        BtUtil.appendLogGreet(tempo+" ricevuto Neighbor Greeting n. "+contRicez.getNum_Greet() +"da "+mittente);
+                        BtUtil.appendLogGreet(tempo + " ricevuto Neighbor Greeting n. " + contRicez.getNum_Greet() + "da " + mittente);
                     } else if (ric instanceof RouteReply) {
                         contRicez.incrNum_RREP();
                         rreps.add((RouteReply) ric);
-                        BtUtil.appendLog(tempo+" ricevuto Route Reply n. "+contRicez.getNum_RREP() +"da "+mittente+" source: "+((RouteReply) ric).getSource_addr());
+                        BtUtil.appendLog(tempo + " ricevuto Route Reply n. " + contRicez.getNum_RREP() + "da " + mittente + " source: " + ((RouteReply) ric).getSource_addr());
                     } else if (ric instanceof RouteRequest) {
                         RouteRequest rr = (RouteRequest) ric;
                         Log.d("ConnectedThread", rr.getSource_addr());
                         contRicez.incrNum_RREQ();
                         rreqs.add((RouteRequest) ric);
-                        BtUtil.appendLog(tempo+" ricevuto Route Request n. "+contRicez.getNum_RREQ() +"da "+mittente+" source: "+((RouteRequest) ric).getSource_addr());
+                        BtUtil.appendLog(tempo + " ricevuto Route Request n. " + contRicez.getNum_RREQ() + "da " + mittente + " source: " + ((RouteRequest) ric).getSource_addr());
                     } else if (ric instanceof Messaggio) {
                         contRicez.incrNum_Mess();
                         messages.add((Messaggio) ric);
-                        BtUtil.appendLog(tempo+" ricevuto Messaggio n. "+contRicez.getNum_Mess() +"da "+mittente+" source: "+((Messaggio) ric).getSource());
+                        BtUtil.appendLog(tempo + " ricevuto Messaggio n. " + contRicez.getNum_Mess() + "da " + mittente + " source: " + ((Messaggio) ric).getSource());
                     } else if (ric instanceof RouteError) {
                         contRicez.incrNum_RERR();
                         errors.add((RouteError) ric);
-                        BtUtil.appendLog(tempo+" ricevuto Route Error n. "+contRicez.getNum_RERR() +"da "+mittente+" source: "+((RouteError) ric).getSource());
+                        BtUtil.appendLog(tempo + " ricevuto Route Error n. " + contRicez.getNum_RERR() + "da " + mittente + " source: " + ((RouteError) ric).getSource());
                     }
 
                 } catch (IOException e) {
                     Log.d(tag, "lettura fallita");
-                    cancel();//TODO
+                    cancel();
                     break;
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
+                    cancel();
+                    break;
+                } catch (NegativeArraySizeException e) {
+                    Log.e(tag, "negative array exception");
+                    cancel();
+                    break;
                 }
             }
         }
@@ -506,22 +512,22 @@ public class BtUtil {
                 oos.writeObject(obj);
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
                 Calendar c = Calendar.getInstance();
-                String tempo = c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND)+":"+c.get(Calendar.MILLISECOND);
+                String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
                 if (obj instanceof NeighborGreeting) {
                     contInvii.incrNum_Greet();
-                    BtUtil.appendLogGreet( tempo+" inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
+                    BtUtil.appendLogGreet(tempo + " inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
                 } else if (obj instanceof RouteReply) {
                     contInvii.getNum_RREP();
-                    BtUtil.appendLog(tempo+" inviato Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress()+" source: "+((RouteReply) obj).getSource_addr());
+                    BtUtil.appendLog(tempo + " inviato Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress() + " source: " + ((RouteReply) obj).getSource_addr());
                 } else if (obj instanceof RouteRequest) {
                     contInvii.incrNum_RREQ();
-                    BtUtil.appendLog(tempo+" inviato Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress()+" source: "+((RouteRequest) obj).getSource_addr());
+                    BtUtil.appendLog(tempo + " inviato Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress() + " source: " + ((RouteRequest) obj).getSource_addr());
                 } else if (obj instanceof Messaggio) {
                     contInvii.incrNum_Mess();
-                    BtUtil.appendLog(tempo+" inviato messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress()+" source: "+((Messaggio) obj).getSource());
+                    BtUtil.appendLog(tempo + " inviato messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress() + " source: " + ((Messaggio) obj).getSource());
                 } else if (obj instanceof RouteError) {
                     contInvii.incrNum_RERR();
-                    BtUtil.appendLog(tempo+" inviato Route Error a " + "n. " + contInvii.getNum_RERR() + " a " + selectedDevice.getAddress()+" source: "+((RouteError) obj).getSource());
+                    BtUtil.appendLog(tempo + " inviato Route Error a " + "n. " + contInvii.getNum_RERR() + " a " + selectedDevice.getAddress() + " source: " + ((RouteError) obj).getSource());
                 }
                 String nomeClasse = obj.getClass().getSimpleName();
                 Log.d("write: ", nomeClasse);
@@ -529,6 +535,7 @@ public class BtUtil {
             } catch (IOException e) {
                 Log.d(tag, "invio fallito");
                 cancel();//TODO
+            } catch (NullPointerException e) {
             }
         }
 

@@ -38,7 +38,6 @@ public class GestoreVicini extends Thread {
             for(int i=0; i<3; i++) {
                 for (Node vicino : vicini) {
                     BtUtil.inviaGreeting(ng, vicino.getMACAddress());
-
                 }
                 try {
                     this.sleep(ATTESA);
