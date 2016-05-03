@@ -13,6 +13,9 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
 import com.prog.tlc.btexchange.protocollo.Messaggio;
@@ -21,15 +24,21 @@ import com.prog.tlc.btexchange.protocollo.RouteError;
 import com.prog.tlc.btexchange.protocollo.RouteReply;
 import com.prog.tlc.btexchange.protocollo.RouteRequest;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -386,6 +395,20 @@ public class BtUtil {
         return false;
     }
 
+    public static String objToString(Object obj) {
+        Gson gson = new Gson();
+        String s = null;
+        Wrapper w=new Wrapper(obj);
+        s=gson.toJson(w);
+        return s;
+    }
+
+    public static Object strToObj(String json) {
+        Gson gson = new Gson();
+        Wrapper w = gson.fromJson(json, Wrapper.class);
+        return w.getContent();
+    }
+
     private static class ConnectThread extends Thread {
 
         private final BluetoothSocket mmSocket;
@@ -448,19 +471,30 @@ public class BtUtil {
 
     private static class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
+        private final InputStream mmInStream;
+        private final OutputStream mmOutStream;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
+            InputStream tmpIn = null;
+            OutputStream tmpOut = null;
+
+            try {
+                tmpIn = socket.getInputStream();
+                tmpOut = socket.getOutputStream();
+            } catch (IOException e) {
+            }
+
+            mmInStream = tmpIn;
+            mmOutStream = tmpOut;
         }
 
         public void run() {
-
-            // Keep listening to the InputStream until an exception occurs
             while (true) {
                 try {
-                    // Read from the InputStream
-                    ObjectInputStream ois = new ObjectInputStream(mmSocket.getInputStream());
-                    Object ric = ois.readObject();
+                    BufferedReader bs = new BufferedReader(new InputStreamReader(mmSocket.getInputStream()));
+                    String json = bs.readLine();
+                    Object ric = strToObj(json);
                     Calendar c = Calendar.getInstance();
                     String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
                     String mittente = mmSocket.getRemoteDevice().getAddress();
@@ -492,10 +526,6 @@ public class BtUtil {
                     Log.d(tag, "lettura fallita");
                     cancel();
                     break;
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                    cancel();
-                    break;
                 } catch (NegativeArraySizeException e) {
                     Log.e(tag, "negative array exception");
                     cancel();
@@ -508,8 +538,8 @@ public class BtUtil {
         public void write(Object obj) {
             try {
                 //mmOutStream.write(bytes);
-                ObjectOutputStream oos = new ObjectOutputStream(mmSocket.getOutputStream());
-                oos.writeObject(obj);
+                PrintWriter pw = new PrintWriter(mmSocket.getOutputStream());
+                pw.println(objToString(obj));
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
                 Calendar c = Calendar.getInstance();
                 String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
@@ -531,7 +561,7 @@ public class BtUtil {
                 }
                 String nomeClasse = obj.getClass().getSimpleName();
                 Log.d("write: ", nomeClasse);
-                oos.flush();
+                pw.flush();
             } catch (IOException e) {
                 Log.d(tag, "invio fallito");
                 cancel();//TODO
