@@ -331,24 +331,6 @@ public class BtUtil {
         /*if (btAdapter.isDiscovering()) {
             btAdapter.cancelDiscovery();
         }*/
-        Calendar c = Calendar.getInstance();
-        String tempo = c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND)+":"+c.get(Calendar.MILLISECOND);
-        if (obj instanceof NeighborGreeting) {
-            contInvii.incrNum_Greet();
-            BtUtil.appendLogGreet( tempo+" inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
-        } else if (obj instanceof RouteReply) {
-            contInvii.getNum_RREP();
-            BtUtil.appendLog(tempo+" inviato Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress()+" source: "+((RouteReply) obj).getSource_addr());
-        } else if (obj instanceof RouteRequest) {
-            contInvii.incrNum_RREQ();
-            BtUtil.appendLog(tempo+" inviato Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress()+" source: "+((RouteRequest) obj).getSource_addr());
-        } else if (obj instanceof Messaggio) {
-            contInvii.incrNum_Mess();
-            BtUtil.appendLog(tempo+" inviato messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress()+" source: "+((Messaggio) obj).getSource());
-        } else if (obj instanceof RouteError) {
-            contInvii.incrNum_RERR();
-            BtUtil.appendLog(tempo+" inviato Route Error a " + "n. " + contInvii.getNum_RERR() + " a " + selectedDevice.getAddress()+" source: "+((RouteError) obj).getSource());
-        }
 
         if (sockets.containsKey(selectedDevice.getAddress())) {
             BluetoothSocket k = sockets.get(selectedDevice.getAddress());
@@ -522,6 +504,25 @@ public class BtUtil {
                 //mmOutStream.write(bytes);
                 ObjectOutputStream oos = new ObjectOutputStream(mmSocket.getOutputStream());
                 oos.writeObject(obj);
+                BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
+                Calendar c = Calendar.getInstance();
+                String tempo = c.get(Calendar.HOUR)+":"+c.get(Calendar.MINUTE)+":"+c.get(Calendar.SECOND)+":"+c.get(Calendar.MILLISECOND);
+                if (obj instanceof NeighborGreeting) {
+                    contInvii.incrNum_Greet();
+                    BtUtil.appendLogGreet( tempo+" inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
+                } else if (obj instanceof RouteReply) {
+                    contInvii.getNum_RREP();
+                    BtUtil.appendLog(tempo+" inviato Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress()+" source: "+((RouteReply) obj).getSource_addr());
+                } else if (obj instanceof RouteRequest) {
+                    contInvii.incrNum_RREQ();
+                    BtUtil.appendLog(tempo+" inviato Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress()+" source: "+((RouteRequest) obj).getSource_addr());
+                } else if (obj instanceof Messaggio) {
+                    contInvii.incrNum_Mess();
+                    BtUtil.appendLog(tempo+" inviato messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress()+" source: "+((Messaggio) obj).getSource());
+                } else if (obj instanceof RouteError) {
+                    contInvii.incrNum_RERR();
+                    BtUtil.appendLog(tempo+" inviato Route Error a " + "n. " + contInvii.getNum_RERR() + " a " + selectedDevice.getAddress()+" source: "+((RouteError) obj).getSource());
+                }
                 String nomeClasse = obj.getClass().getSimpleName();
                 Log.d("write: ", nomeClasse);
                 oos.flush();
