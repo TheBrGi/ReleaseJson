@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -51,7 +52,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA_DISCOVERY = 5000;//tempo necessario dal bt a vedere dispositivo
+    private final static long ATTESA_DISCOVERY =4000;//tempo necessario dal bt a vedere dispositivo
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -60,7 +61,7 @@ public class BtUtil {
     protected static final int SUCCESS_CONNECT = 0;
     protected static final int MESSAGE_READ = 1;
     private static ConcurrentHashMap<String, BluetoothSocket> sockets = new ConcurrentHashMap<>();
-    private static ArrayList<BluetoothDevice> deviceVisibili = new ArrayList<>();
+    private static ConcurrentLinkedQueue<BluetoothDevice> deviceVisibili = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<RouteRequest> rreqs = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<RouteReply> rreps = new ConcurrentLinkedQueue<>();
     private static ConcurrentLinkedQueue<NeighborGreeting> greetings = new ConcurrentLinkedQueue<>();
@@ -68,6 +69,7 @@ public class BtUtil {
     private static ConcurrentLinkedQueue<RouteError> errors = new ConcurrentLinkedQueue<>();
     private static Contatore contInvii = new Contatore();
     private static Contatore contRicez = new Contatore();
+    private static Contatore contFail = new Contatore();
 
 
     private static BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -471,22 +473,9 @@ public class BtUtil {
 
     private static class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
-        private final InputStream mmInStream;
-        private final OutputStream mmOutStream;
 
         public ConnectedThread(BluetoothSocket socket) {
             mmSocket = socket;
-            InputStream tmpIn = null;
-            OutputStream tmpOut = null;
-
-            try {
-                tmpIn = socket.getInputStream();
-                tmpOut = socket.getOutputStream();
-            } catch (IOException e) {
-            }
-
-            mmInStream = tmpIn;
-            mmOutStream = tmpOut;
         }
 
         public void run() {
@@ -538,33 +527,53 @@ public class BtUtil {
         public void write(Object obj) {
             try {
                 //mmOutStream.write(bytes);
-                PrintWriter pw = new PrintWriter(mmSocket.getOutputStream());
-                pw.println(objToString(obj));
+
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
                 Calendar c = Calendar.getInstance();
                 String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
                 if (obj instanceof NeighborGreeting) {
                     contInvii.incrNum_Greet();
-                    BtUtil.appendLogGreet(tempo + " inviato greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
+                    BtUtil.appendLogGreet(tempo + " invio greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
                 } else if (obj instanceof RouteReply) {
                     contInvii.getNum_RREP();
-                    BtUtil.appendLog(tempo + " inviato Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress() + " source: " + ((RouteReply) obj).getSource_addr());
+                    BtUtil.appendLog(tempo + " invio Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress() + " source: " + ((RouteReply) obj).getSource_addr());
                 } else if (obj instanceof RouteRequest) {
                     contInvii.incrNum_RREQ();
-                    BtUtil.appendLog(tempo + " inviato Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress() + " source: " + ((RouteRequest) obj).getSource_addr());
+                    BtUtil.appendLog(tempo + " invio Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress() + " source: " + ((RouteRequest) obj).getSource_addr());
                 } else if (obj instanceof Messaggio) {
                     contInvii.incrNum_Mess();
-                    BtUtil.appendLog(tempo + " inviato messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress() + " source: " + ((Messaggio) obj).getSource());
+                    BtUtil.appendLog(tempo + " invio messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress() + " source: " + ((Messaggio) obj).getSource());
                 } else if (obj instanceof RouteError) {
                     contInvii.incrNum_RERR();
-                    BtUtil.appendLog(tempo + " inviato Route Error a " + "n. " + contInvii.getNum_RERR() + " a " + selectedDevice.getAddress() + " source: " + ((RouteError) obj).getSource());
+                    BtUtil.appendLog(tempo + " invio Route Error a " + "n. " + contInvii.getNum_RERR() + " a " + selectedDevice.getAddress() + " source: " + ((RouteError) obj).getSource());
                 }
                 String nomeClasse = obj.getClass().getSimpleName();
                 Log.d("write: ", nomeClasse);
+                PrintWriter pw = new PrintWriter(mmSocket.getOutputStream());
+                pw.println(objToString(obj));
                 pw.flush();
             } catch (IOException e) {
                 Log.d(tag, "invio fallito");
                 cancel();//TODO
+                BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
+                Calendar c = Calendar.getInstance();
+                String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
+                if (obj instanceof NeighborGreeting) {
+                    contFail.incrNum_Greet();
+                    BtUtil.appendLogGreet(tempo + " fallito invio greeting " + "n. " + contFail.getNum_Greet() + " a " + selectedDevice.getAddress());
+                } else if (obj instanceof RouteReply) {
+                    contFail.getNum_RREP();
+                    BtUtil.appendLog(tempo + " fallito invio Route Reply" + "n. " + contFail.getNum_RREP() + " a " + selectedDevice.getAddress() + " source: " + ((RouteReply) obj).getSource_addr());
+                } else if (obj instanceof RouteRequest) {
+                    contFail.incrNum_RREQ();
+                    BtUtil.appendLog(tempo + " fallito invio Route Request " + "n. " + contFail.getNum_RREQ() + " a " + selectedDevice.getAddress() + " source: " + ((RouteRequest) obj).getSource_addr());
+                } else if (obj instanceof Messaggio) {
+                    contFail.incrNum_Mess();
+                    BtUtil.appendLog(tempo + " fallito invio messaggio a " + "n. " + contFail.getNum_Mess() + " a " + selectedDevice.getAddress() + " source: " + ((Messaggio) obj).getSource());
+                } else if (obj instanceof RouteError) {
+                    contFail.incrNum_RERR();
+                    BtUtil.appendLog(tempo + " fallito invio Route Error a " + "n. " + contFail.getNum_RERR() + " a " + selectedDevice.getAddress() + " source: " + ((RouteError) obj).getSource());
+                }
             } catch (NullPointerException e) {
             }
         }

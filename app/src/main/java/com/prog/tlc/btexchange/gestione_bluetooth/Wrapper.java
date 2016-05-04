@@ -9,6 +9,7 @@ import com.prog.tlc.btexchange.protocollo.RouteRequest;
 /**
  * Created by BrGi on 03/05/2016.
  */
+
 public class Wrapper {
     private Messaggio mess;
     private NeighborGreeting neigh;
