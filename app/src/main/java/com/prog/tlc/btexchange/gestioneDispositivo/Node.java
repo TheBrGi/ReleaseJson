@@ -25,7 +25,7 @@ public class Node implements Serializable {
         if(!(o instanceof Node))
             return false;
         Node n=(Node)o;
-        if(this.nome.equals(n.getNome()) && this.MACAddress.equals(n.getMACAddress()))
+        if(this.MACAddress.equals(n.getMACAddress()))
             return true;
         return false;
     }//equals
