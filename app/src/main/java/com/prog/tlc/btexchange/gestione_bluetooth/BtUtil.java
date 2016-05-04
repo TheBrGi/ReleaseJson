@@ -16,6 +16,7 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.stream.JsonReader;
 import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
 import com.prog.tlc.btexchange.protocollo.Messaggio;
@@ -35,6 +36,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -51,8 +53,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class BtUtil {
     public static MainActivity mainActivity;
-    public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA_DISCOVERY =4000;//tempo necessario dal bt a vedere dispositivo
+    public static final UUID MY_UUID = UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
+    private final static long ATTESA_DISCOVERY = 4000;//tempo necessario dal bt a vedere dispositivo
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -81,9 +83,7 @@ public class BtUtil {
                 deviceVisibili.add(device);
                 Log.d("device trovato", device.toString());
             } else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-                // run some code
             } else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
-                // run some code
             } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
                 if (btAdapter.getState() == btAdapter.STATE_OFF) {
                     BtUtil.stopServer();
@@ -104,7 +104,6 @@ public class BtUtil {
             super.handleMessage(msg);
             switch (msg.what) {
                 case SUCCESS_CONNECT:
-                    // DO something
                     BluetoothSocket sock = (BluetoothSocket) msg.obj;
                     sockets.put(sock.getRemoteDevice().getAddress(), sock);
                     ConnectedThread connectedThread = new ConnectedThread((BluetoothSocket) msg.obj);
@@ -194,7 +193,6 @@ public class BtUtil {
 
     public static void stopServer() {
         acceptThread.cancel();
-        acceptThread.interrupt();
         Log.d(tag, "stop AcceptThread");
     }
 
@@ -400,14 +398,17 @@ public class BtUtil {
     public static String objToString(Object obj) {
         Gson gson = new Gson();
         String s = null;
-        Wrapper w=new Wrapper(obj);
-        s=gson.toJson(w);
+        Wrapper w = new Wrapper(obj);
+        s = gson.toJson(w);
         return s;
     }
 
     public static Object strToObj(String json) {
+        Log.d("json",json);
         Gson gson = new Gson();
-        Wrapper w = gson.fromJson(json, Wrapper.class);
+        JsonReader reader = new JsonReader(new StringReader(json));
+        reader.setLenient(true);
+        Wrapper w = gson.fromJson(reader, Wrapper.class);
         return w.getContent();
     }
 
@@ -473,16 +474,36 @@ public class BtUtil {
 
     private static class ConnectedThread extends Thread {
         private final BluetoothSocket mmSocket;
+        private final InputStream mmInStream;
+        private final OutputStream mmOutStream;
 
         public ConnectedThread(BluetoothSocket socket) {
+            Log.d(tag, "create ConnectedThread");
             mmSocket = socket;
+            InputStream tmpIn = null;
+            OutputStream tmpOut = null;
+
+            // Get the BluetoothSocket input and output streams
+            try {
+                tmpIn = socket.getInputStream();
+                tmpOut = socket.getOutputStream();
+            } catch (IOException e) {
+                Log.e(tag, "temp sockets not created", e);
+            }
+
+            mmInStream = tmpIn;
+            mmOutStream = tmpOut;
         }
 
         public void run() {
+            Log.i(tag, "BEGIN mConnectedThread");
+            byte[] buffer = new byte[2048];
+            int bytes;
             while (true) {
                 try {
-                    BufferedReader bs = new BufferedReader(new InputStreamReader(mmSocket.getInputStream()));
-                    String json = bs.readLine();
+                    // Read from the InputStream
+                    bytes = mmInStream.read(buffer);
+                    String json = new String(buffer, 0, bytes);
                     Object ric = strToObj(json);
                     Calendar c = Calendar.getInstance();
                     String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
@@ -549,9 +570,9 @@ public class BtUtil {
                 }
                 String nomeClasse = obj.getClass().getSimpleName();
                 Log.d("write: ", nomeClasse);
-                PrintWriter pw = new PrintWriter(mmSocket.getOutputStream());
-                pw.println(objToString(obj));
-                pw.flush();
+
+                mmOutStream.write(objToString(obj).getBytes());
+                mmOutStream.flush();
             } catch (IOException e) {
                 Log.d(tag, "invio fallito");
                 cancel();//TODO
@@ -581,6 +602,8 @@ public class BtUtil {
         /* Call this from the main activity to shutdown the connection */
         public void cancel() {
             try {
+                if (mmOutStream != null) mmOutStream.close();
+                if (mmInStream != null) mmInStream.close();
                 mmSocket.close();
             } catch (IOException e) {
             }
