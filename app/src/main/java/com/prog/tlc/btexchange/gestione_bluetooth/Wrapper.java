@@ -1,5 +1,7 @@
 package com.prog.tlc.btexchange.gestione_bluetooth;
 
+import android.util.Log;
+
 import com.prog.tlc.btexchange.protocollo.Messaggio;
 import com.prog.tlc.btexchange.protocollo.NeighborGreeting;
 import com.prog.tlc.btexchange.protocollo.RouteError;
@@ -16,7 +18,7 @@ public class Wrapper {
     private RouteError rerr;
     private RouteReply rrep;
     private RouteRequest rreq;
-    private String type = "";
+    private String type;
 
     public Wrapper(Object obj) {
         if (obj instanceof NeighborGreeting) {
@@ -39,7 +41,9 @@ public class Wrapper {
 
     public Object getContent() {
         Object obj = null;
-        if (type == null) return obj;
+        if (type == null){
+            Log.e("getContent","null");
+            return obj;}
         if (type.equals("neigh")) {
             obj = neigh;
         } else if (type.equals("rrep")) {
@@ -51,6 +55,7 @@ public class Wrapper {
         } else if (type.equals("rerr")) {
             obj = rerr;
         }
+        Log.d("getContent",type);
         return obj;
     }
 }
