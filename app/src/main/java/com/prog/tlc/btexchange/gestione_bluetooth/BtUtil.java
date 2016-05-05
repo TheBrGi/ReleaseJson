@@ -74,34 +74,51 @@ public class BtUtil {
 
     //NTP server list: http://tf.nist.gov/tf-cgi/servers.cgi
     public static final String TIME_SERVER = "time-a.nist.gov";
+    static long returnTime;
 
     public static long getCurrentNetworkTime() {
-        NTPUDPClient timeClient = new NTPUDPClient();
-        InetAddress inetAddress = null;
+
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                NTPUDPClient timeClient = new NTPUDPClient();
+                InetAddress inetAddress = null;
+                try {
+                    inetAddress = InetAddress.getByName(TIME_SERVER);
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+                TimeInfo timeInfo = null;
+                try {
+                    timeInfo = timeClient.getTime(inetAddress);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //long returnTime = timeInfo.getReturnTime();   //local device time
+                returnTime = timeInfo.getMessage().getTransmitTimeStamp().getTime();   //server time
+
+                Date time = new Date(returnTime);
+                Log.d(tag, "Time from " + TIME_SERVER + ": " + time);
+
+            }
+        };
+        Thread t=new Thread(r);
+        t.start();
         try {
-            inetAddress = InetAddress.getByName(TIME_SERVER);
-        } catch (UnknownHostException e) {
+            t.join();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        TimeInfo timeInfo = null;
-        try {
-            timeInfo = timeClient.getTime(inetAddress);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //long returnTime = timeInfo.getReturnTime();   //local device time
-        long returnTime = timeInfo.getMessage().getTransmitTimeStamp().getTime();   //server time
-
-        Date time = new Date(returnTime);
-        Log.d(tag, "Time from " + TIME_SERVER + ": " + time);
-
         return returnTime;
+
     }
 
     public static void setOffset() {
         long timefromserver = getCurrentNetworkTime();
         long mytime = Calendar.getInstance().getTimeInMillis();
         offset = timefromserver - mytime;
+        Log.d("tempo server",String.valueOf(timefromserver));
+        Log.d("tempo mio",String.valueOf(mytime));
     }
 
 
@@ -537,7 +554,7 @@ public class BtUtil {
                     String json = new String(buffer, 0, bytes);
                     Object ric = strToObj(json);
                     Calendar c = Calendar.getInstance();
-                    String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
+                    String tempo = String.valueOf(c.getTimeInMillis() + offset);
                     String mittente = mmSocket.getRemoteDevice().getAddress();
                     if (ric instanceof NeighborGreeting) {
                         contRicez.incrNum_Greet();
@@ -582,7 +599,7 @@ public class BtUtil {
 
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
                 Calendar c = Calendar.getInstance();
-                String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
+                String tempo = String.valueOf(c.getTimeInMillis() + offset);
                 if (obj instanceof NeighborGreeting) {
                     contInvii.incrNum_Greet();
                     BtUtil.appendLogGreet(tempo + " invio greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
@@ -609,7 +626,7 @@ public class BtUtil {
                 cancel();//TODO
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
                 Calendar c = Calendar.getInstance();
-                String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
+                String tempo = String.valueOf(c.getTimeInMillis() + offset);
                 if (obj instanceof NeighborGreeting) {
                     contFail.incrNum_Greet();
                     BtUtil.appendLogGreet(tempo + " fallito invio greeting " + "n. " + contFail.getNum_Greet() + " a " + selectedDevice.getAddress());

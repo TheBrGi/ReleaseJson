@@ -56,6 +56,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         //});
         BtUtil.setContext(this.getApplicationContext());
         BtUtil.setActivity(this);
+        //gestione del tempo
+        BtUtil.setOffset();
+
         BtUtil.accendiBt();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
