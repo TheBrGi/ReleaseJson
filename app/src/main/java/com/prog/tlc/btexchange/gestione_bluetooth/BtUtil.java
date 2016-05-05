@@ -26,25 +26,23 @@ import com.prog.tlc.btexchange.protocollo.RouteError;
 import com.prog.tlc.btexchange.protocollo.RouteReply;
 import com.prog.tlc.btexchange.protocollo.RouteRequest;
 
-import java.io.BufferedReader;
+import org.apache.commons.net.ntp.NTPUDPClient;
+import org.apache.commons.net.ntp.TimeInfo;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.io.StringReader;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -56,7 +54,6 @@ public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
     private final static long ATTESA_DISCOVERY = 4000;//tempo necessario dal bt a vedere dispositivo
-    public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
     private static String tag = "BtExchange debug:";
@@ -73,6 +70,39 @@ public class BtUtil {
     private static Contatore contInvii = new Contatore();
     private static Contatore contRicez = new Contatore();
     private static Contatore contFail = new Contatore();
+    private static long offset;
+
+    //NTP server list: http://tf.nist.gov/tf-cgi/servers.cgi
+    public static final String TIME_SERVER = "time-a.nist.gov";
+
+    public static long getCurrentNetworkTime() {
+        NTPUDPClient timeClient = new NTPUDPClient();
+        InetAddress inetAddress = null;
+        try {
+            inetAddress = InetAddress.getByName(TIME_SERVER);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        TimeInfo timeInfo = null;
+        try {
+            timeInfo = timeClient.getTime(inetAddress);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //long returnTime = timeInfo.getReturnTime();   //local device time
+        long returnTime = timeInfo.getMessage().getTransmitTimeStamp().getTime();   //server time
+
+        Date time = new Date(returnTime);
+        Log.d(tag, "Time from " + TIME_SERVER + ": " + time);
+
+        return returnTime;
+    }
+
+    public static void setOffset() {
+        long timefromserver = getCurrentNetworkTime();
+        long mytime = Calendar.getInstance().getTimeInMillis();
+        offset = timefromserver - mytime;
+    }
 
 
     private static BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -405,7 +435,7 @@ public class BtUtil {
     }
 
     public static Object strToObj(String json) {
-        Log.d("json",json);
+        Log.d("json", json);
         Gson gson = new Gson();
         JsonReader reader = new JsonReader(new StringReader(json));
         reader.setLenient(true);
