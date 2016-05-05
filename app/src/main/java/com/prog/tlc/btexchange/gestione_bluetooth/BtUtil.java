@@ -52,7 +52,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class BtUtil {
     public static MainActivity mainActivity;
     public static final UUID MY_UUID = UUID.fromString("d7a628a4-e911-11e5-9ce9-5e5517507c66");
-    private final static long ATTESA_DISCOVERY =4000;//tempo necessario dal bt a vedere dispositivo
+    private final static long ATTESA_DISCOVERY = 4000;//tempo necessario dal bt a vedere dispositivo
     public static final String GREETING = "greeting";
     private static Context context;
     private static BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -400,8 +400,8 @@ public class BtUtil {
     public static String objToString(Object obj) {
         Gson gson = new Gson();
         String s = null;
-        Wrapper w=new Wrapper(obj);
-        s=gson.toJson(w);
+        Wrapper w = new Wrapper(obj);
+        s = gson.toJson(w);
         return s;
     }
 
@@ -484,8 +484,8 @@ public class BtUtil {
                     BufferedReader bs = new BufferedReader(new InputStreamReader(mmSocket.getInputStream()));
                     String json = bs.readLine();
                     Object ric = strToObj(json);
-                    Calendar c = Calendar.getInstance();
-                    String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
+                    long time = System.currentTimeMillis();
+                    String tempo = String.valueOf(time);
                     String mittente = mmSocket.getRemoteDevice().getAddress();
                     if (ric instanceof NeighborGreeting) {
                         contRicez.incrNum_Greet();
@@ -529,8 +529,8 @@ public class BtUtil {
                 //mmOutStream.write(bytes);
 
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
-                Calendar c = Calendar.getInstance();
-                String tempo = c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE) + ":" + c.get(Calendar.SECOND) + ":" + c.get(Calendar.MILLISECOND);
+                long time = System.currentTimeMillis();
+                String tempo = String.valueOf(time);
                 if (obj instanceof NeighborGreeting) {
                     contInvii.incrNum_Greet();
                     BtUtil.appendLogGreet(tempo + " invio greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
