@@ -206,7 +206,7 @@ public class AODV {
                 BtUtil.mostraMess(s);
                 if (mess.getDest().getMACAddress().equals(myDev.getMACAddress())) {
                     BtUtil.mostraMess(mess.getMex());
-                    BtUtil.appendLog("ricevuto messaggio da " + mess.getSource());
+                    BtUtil.appendLog("ricevuto messaggio da " + mess.getSource()); //TODO vedere se va cancellato
                 } else {
                     rilanciaMess(mess);
                 }

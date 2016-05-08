@@ -12,6 +12,7 @@ public class Messaggio implements Serializable {
     private Node dest;
     private String lastSender;
     private String source;
+    private long timeStamp;
 
     public Messaggio(String s, Node dest,String lastSender, String source) {
         this.mex = s;
@@ -31,4 +32,8 @@ public class Messaggio implements Serializable {
     public String getLastSender() { return  lastSender; }
 
     public String getSource() { return source; }
+
+    public long getTimeStamp() { return timeStamp; }
+
+    public void setTimeStamp(long ts) { this.timeStamp = ts; }
 }

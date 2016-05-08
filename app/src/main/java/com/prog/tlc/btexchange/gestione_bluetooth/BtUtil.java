@@ -102,7 +102,7 @@ public class BtUtil {
 
             }
         };
-        Thread t=new Thread(r);
+        Thread t = new Thread(r);
         t.start();
         try {
             t.join();
@@ -117,8 +117,8 @@ public class BtUtil {
         long timefromserver = getCurrentNetworkTime();
         long mytime = Calendar.getInstance().getTimeInMillis();
         offset = timefromserver - mytime;
-        Log.d("tempo server",String.valueOf(timefromserver));
-        Log.d("tempo mio",String.valueOf(mytime));
+        Log.d("tempo server", String.valueOf(timefromserver));
+        Log.d("tempo mio", String.valueOf(mytime));
     }
 
 
@@ -554,7 +554,8 @@ public class BtUtil {
                     String json = new String(buffer, 0, bytes);
                     Object ric = strToObj(json);
                     Calendar c = Calendar.getInstance();
-                    String tempo = String.valueOf(c.getTimeInMillis() + offset);
+                    long tempoRic = c.getTimeInMillis() + offset;
+                    String tempo = String.valueOf(tempoRic);
                     String mittente = mmSocket.getRemoteDevice().getAddress();
                     if (ric instanceof NeighborGreeting) {
                         contRicez.incrNum_Greet();
@@ -573,7 +574,11 @@ public class BtUtil {
                     } else if (ric instanceof Messaggio) {
                         contRicez.incrNum_Mess();
                         messages.add((Messaggio) ric);
-                        BtUtil.appendLog(tempo + " ricevuto Messaggio n. " + contRicez.getNum_Mess() + "da " + mittente + " source: " + ((Messaggio) ric).getSource());
+                        if (((Messaggio) ric).getDest().equals(getMACMioDispositivo())) {
+                            long tempoE2E = tempoRic - ((Messaggio) ric).getTimeStamp();
+                            BtUtil.appendLog(tempo + " ricevuto Messaggio n. " + contRicez.getNum_Mess() + "da " + mittente + " source: " + ((Messaggio) ric).getSource() + "TEMPO E2E : " + String.valueOf(tempoE2E));
+                        } else
+                            BtUtil.appendLog(tempo + " ricevuto Messaggio n. " + contRicez.getNum_Mess() + "da " + mittente + " source: " + ((Messaggio) ric).getSource());
                     } else if (ric instanceof RouteError) {
                         contRicez.incrNum_RERR();
                         errors.add((RouteError) ric);
@@ -599,7 +604,8 @@ public class BtUtil {
 
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
                 Calendar c = Calendar.getInstance();
-                String tempo = String.valueOf(c.getTimeInMillis() + offset);
+                long timeStamp = c.getTimeInMillis() + offset;
+                String tempo = String.valueOf(timeStamp);
                 if (obj instanceof NeighborGreeting) {
                     contInvii.incrNum_Greet();
                     BtUtil.appendLogGreet(tempo + " invio greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
@@ -611,6 +617,8 @@ public class BtUtil {
                     BtUtil.appendLog(tempo + " invio Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress() + " source: " + ((RouteRequest) obj).getSource_addr());
                 } else if (obj instanceof Messaggio) {
                     contInvii.incrNum_Mess();
+                    if (((Messaggio) obj).getSource().equals(getMACMioDispositivo()))
+                        ((Messaggio) obj).setTimeStamp(timeStamp);
                     BtUtil.appendLog(tempo + " invio messaggio a " + "n. " + contInvii.getNum_Mess() + " a " + selectedDevice.getAddress() + " source: " + ((Messaggio) obj).getSource());
                 } else if (obj instanceof RouteError) {
                     contInvii.incrNum_RERR();
