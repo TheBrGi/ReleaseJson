@@ -14,8 +14,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 import com.prog.tlc.btexchange.MainActivity;
 import com.prog.tlc.btexchange.gestioneDispositivo.Node;
