@@ -113,7 +113,7 @@ public class BtUtil {
 
     public static void setOffset() {
         long timefromserver = getCurrentNetworkTime();
-        long mytime = Calendar.getInstance().getTimeInMillis();
+        long mytime = System.currentTimeMillis();
         offset = timefromserver - mytime;
         Log.d("tempo server", String.valueOf(timefromserver));
         Log.d("tempo mio", String.valueOf(mytime));
@@ -551,8 +551,7 @@ public class BtUtil {
                     bytes = mmInStream.read(buffer);
                     String json = new String(buffer, 0, bytes);
                     Object ric = strToObj(json);
-                    Calendar c = Calendar.getInstance();
-                    long tempoRic = c.getTimeInMillis() + offset;
+                    long tempoRic = System.currentTimeMillis() + offset;
                     String tempo = String.valueOf(tempoRic);
                     String mittente = mmSocket.getRemoteDevice().getAddress();
                     if (ric instanceof NeighborGreeting) {
@@ -601,8 +600,7 @@ public class BtUtil {
                 //mmOutStream.write(bytes);
 
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
-                Calendar c = Calendar.getInstance();
-                long timeStamp = c.getTimeInMillis() + offset;
+                long timeStamp = System.currentTimeMillis() + offset;
                 String tempo = String.valueOf(timeStamp);
                 if (obj instanceof NeighborGreeting) {
                     contInvii.incrNum_Greet();
@@ -631,8 +629,7 @@ public class BtUtil {
                 Log.d(tag, "invio fallito");
                 cancel();//TODO
                 BluetoothDevice selectedDevice = mmSocket.getRemoteDevice();
-                Calendar c = Calendar.getInstance();
-                String tempo = String.valueOf(c.getTimeInMillis() + offset);
+                String tempo = String.valueOf(System.currentTimeMillis() + offset);
                 if (obj instanceof NeighborGreeting) {
                     contFail.incrNum_Greet();
                     BtUtil.appendLogGreet(tempo + " fallito invio greeting " + "n. " + contFail.getNum_Greet() + " a " + selectedDevice.getAddress());
