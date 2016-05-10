@@ -206,7 +206,6 @@ public class AODV {
                 BtUtil.mostraMess(s);
                 if (mess.getDest().getMACAddress().equals(myDev.getMACAddress())) {
                     BtUtil.mostraMess(mess.getMex());
-                    BtUtil.appendLog("ricevuto messaggio da " + mess.getSource()); //TODO vedere se va cancellato
                 } else {
                     rilanciaMess(mess);
                 }
@@ -221,6 +220,7 @@ public class AODV {
             boolean connessioneOk = false;
             if (p != null) {
                 Messaggio m = new Messaggio(mess.getMex(), mess.getDest(), myDev.getMACAddress(), mess.getSource());
+                m.setTimeStamp(mess.getTimeStamp());
                 BtUtil.inviaMess(m, p.getNextHop());//manda al nodo successivo
                 Log.d("invio al nodo succ", dest);
                 connessioneOk = BtUtil.checkSocket(p.getNextHop());

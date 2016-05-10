@@ -574,9 +574,9 @@ public class BtUtil {
                     } else if (ric instanceof Messaggio) {
                         contRicez.incrNum_Mess();
                         messages.add((Messaggio) ric);
-                        if (((Messaggio) ric).getDest().equals(getMACMioDispositivo())) {
+                        if (((Messaggio) ric).getDest().getMACAddress().equals(getMACMioDispositivo())) {
                             long tempoE2E = tempoRic - ((Messaggio) ric).getTimeStamp();
-                            BtUtil.appendLog(tempo + " ricevuto Messaggio n. " + contRicez.getNum_Mess() + "da " + mittente + " source: " + ((Messaggio) ric).getSource() + "TEMPO E2E : " + String.valueOf(tempoE2E));
+                            BtUtil.appendLog(tempo + " ricevuto Messaggio n. " + contRicez.getNum_Mess() + "da " + mittente + " source: " + ((Messaggio) ric).getSource() + " TEMPO E2E : " + String.valueOf(tempoE2E));
                         } else
                             BtUtil.appendLog(tempo + " ricevuto Messaggio n. " + contRicez.getNum_Mess() + "da " + mittente + " source: " + ((Messaggio) ric).getSource());
                     } else if (ric instanceof RouteError) {
@@ -611,7 +611,7 @@ public class BtUtil {
                     BtUtil.appendLogGreet(tempo + " invio greeting " + "n. " + contInvii.getNum_Greet() + " a " + selectedDevice.getAddress());
                 } else if (obj instanceof RouteReply) {
                     contInvii.getNum_RREP();
-                    BtUtil.appendLog(tempo + " invio Route Reply" + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress() + " source: " + ((RouteReply) obj).getSource_addr());
+                    BtUtil.appendLog(tempo + " invio Route Reply " + "n. " + contInvii.getNum_RREP() + " a " + selectedDevice.getAddress() + " source: " + ((RouteReply) obj).getSource_addr());
                 } else if (obj instanceof RouteRequest) {
                     contInvii.incrNum_RREQ();
                     BtUtil.appendLog(tempo + " invio Route Request " + "n. " + contInvii.getNum_RREQ() + " a " + selectedDevice.getAddress() + " source: " + ((RouteRequest) obj).getSource_addr());
